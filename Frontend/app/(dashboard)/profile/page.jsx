@@ -134,7 +134,7 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   aria-label="Cambiar foto de perfil"
-                  className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-brand-yellow text-brand-blue shadow"
+                  className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-brand-yellow text-brand-blue shadow"
                 >
                   <Pencil size={14} />
                 </button>
@@ -209,7 +209,7 @@ export default function ProfilePage() {
 
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium text-brand-text">Tipo de medio</span>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {MEDIA_TYPE_OPTIONS.map((option) => (
                   <Checkbox
                     key={option}
@@ -224,7 +224,7 @@ export default function ProfilePage() {
 
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium text-brand-text">¿En qué áreas trabajas?</span>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {COVERAGE_AREA_OPTIONS.map((option) => (
                   <Checkbox
                     key={option}
@@ -239,7 +239,7 @@ export default function ProfilePage() {
 
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium text-brand-text">¿Qué tipo de contenido produces?</span>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {CONTENT_TYPE_OPTIONS.map((option) => (
                   <Checkbox
                     key={option}
@@ -272,7 +272,7 @@ export default function ProfilePage() {
 
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium text-brand-text">¿Qué herramientas utilizas actualmente?</span>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {AI_TOOLS_OPTIONS.map((option) => (
                   <Checkbox
                     key={option}

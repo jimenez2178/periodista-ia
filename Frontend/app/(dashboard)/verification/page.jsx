@@ -68,11 +68,13 @@ export default function VerificationPage() {
       {result && !loading && (
         <>
           <VerificationResult result={result} />
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={handleReset}>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
               Nueva verificación
             </Button>
-            <Button onClick={() => setToastMessage("Próximamente")}>Guardar en proyecto →</Button>
+            <Button onClick={() => setToastMessage("Próximamente")} className="w-full sm:w-auto">
+              Guardar en proyecto →
+            </Button>
           </div>
         </>
       )}

@@ -18,11 +18,11 @@ export default function ClaimInput({ value, onChange, onSubmit, disabled }) {
         placeholder="Escribe la afirmación que quieres verificar. Ej: El presidente firmó el decreto 45-2026 el pasado lunes"
         className="rounded-brand border border-brand-border px-4 py-3 text-brand-text outline-none focus:border-brand-blue disabled:bg-brand-bg disabled:text-brand-text/50"
       />
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-xs text-brand-text/50">
           {value.length}/{MAX_LENGTH}
         </span>
-        <Button onClick={onSubmit} disabled={disabled || isEmpty}>
+        <Button onClick={onSubmit} disabled={disabled || isEmpty} className="w-full sm:w-auto">
           Verificar
         </Button>
       </div>

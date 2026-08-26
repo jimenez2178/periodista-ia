@@ -1,21 +1,32 @@
 "use client";
 
 import Image from "next/image";
+import { Menu } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { getGreeting, getInitials } from "../../utils/formatters";
 import CreditsBadge from "../credits/CreditsBadge";
 
-export default function TopBar() {
+export default function TopBar({ onMenuClick }) {
   const { user } = useAuth();
   const firstName = (user?.full_name || user?.email || "").split(" ")[0];
 
   return (
-    <header className="flex items-center justify-between border-b border-brand-border bg-white px-8 py-4">
-      <h1 className="text-lg font-semibold text-brand-text">
-        {getGreeting()}, {firstName}
-      </h1>
+    <header className="flex items-center justify-between border-b border-brand-border bg-white px-4 py-4 md:px-8">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          aria-label="Abrir menú"
+          className="flex h-11 w-11 items-center justify-center rounded-brand text-brand-text hover:bg-brand-bg md:hidden"
+        >
+          <Menu size={22} />
+        </button>
+        <h1 className="hidden text-lg font-semibold text-brand-text sm:block">
+          {getGreeting()}, {firstName}
+        </h1>
+      </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 md:gap-4">
         <CreditsBadge />
         {user?.avatar_url ? (
           <Image
