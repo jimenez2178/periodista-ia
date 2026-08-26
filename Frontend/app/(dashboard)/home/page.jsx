@@ -28,7 +28,7 @@ export default function HomePage() {
     <div className="flex flex-col gap-8">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {FEATURES.map((feature) => (
-          <Card key={feature.href} className="flex flex-col gap-3">
+          <Card key={feature.href} variant="elevated" className="flex flex-col gap-3">
             <span className="text-3xl">{feature.emoji}</span>
             <h2 className="text-lg font-bold text-brand-text">{feature.title}</h2>
             <p className="flex-1 text-sm text-brand-text/70">{feature.description}</p>

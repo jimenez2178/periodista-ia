@@ -48,6 +48,26 @@ export default function Sidebar({ open, onClose }) {
           </button>
         </div>
 
+        <div className="flex items-center gap-3 border-b border-white/10 px-6 py-4 md:hidden">
+          {user?.avatar_url ? (
+            <Image
+              src={user.avatar_url}
+              alt={user.full_name || user.email}
+              width={40}
+              height={40}
+              className="rounded-full object-cover"
+            />
+          ) : (
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-yellow text-sm font-bold text-brand-blue">
+              {getInitials(user?.full_name || user?.email)}
+            </span>
+          )}
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-sm font-medium">{user?.full_name || user?.email}</span>
+            {user?.email && <span className="truncate text-xs text-white/60">{user.email}</span>}
+          </div>
+        </div>
+
         <nav className="flex flex-1 flex-col gap-1 px-3">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
@@ -67,7 +87,7 @@ export default function Sidebar({ open, onClose }) {
           })}
         </nav>
 
-        <div className="flex items-center gap-3 border-t border-white/10 px-6 py-4">
+        <div className="hidden items-center gap-3 border-t border-white/10 px-6 py-4 md:flex">
           {user?.avatar_url ? (
             <Image
               src={user.avatar_url}

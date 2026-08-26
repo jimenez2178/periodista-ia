@@ -8,7 +8,7 @@ export default function CreditsBadge() {
   if (loading || !credits) return null;
 
   return (
-    <span className="rounded-full bg-brand-yellow/20 px-3 py-1 text-sm font-medium text-brand-blue">
+    <span className="rounded-full bg-brand-blue px-3 py-1 text-sm font-medium text-white">
       {credits.available} {credits.available === 1 ? "crédito restante hoy" : "créditos restantes hoy"}
     </span>
   );

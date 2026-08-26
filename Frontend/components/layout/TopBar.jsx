@@ -17,7 +17,7 @@ export default function TopBar({ onMenuClick }) {
           type="button"
           onClick={onMenuClick}
           aria-label="Abrir menú"
-          className="flex h-11 w-11 items-center justify-center rounded-brand text-brand-text hover:bg-brand-bg md:hidden"
+          className="flex h-11 w-11 items-center justify-center rounded-brand bg-brand-blue/5 text-brand-text hover:bg-brand-blue/10 md:hidden"
         >
           <Menu size={22} />
         </button>
