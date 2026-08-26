@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const env = require("./config/env");
 const errorHandler = require("./middleware/errorHandler");
+const requireAuth = require("./middleware/auth");
+const authRoutes = require("./modules/auth/auth.routes");
 const ideasRoutes = require("./modules/ideas/ideas.routes");
 
 const app = express();
@@ -9,7 +11,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/ideas", ideasRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/ideas", requireAuth, ideasRoutes);
 
 app.use(errorHandler);
 
