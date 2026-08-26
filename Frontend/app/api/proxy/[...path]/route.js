@@ -89,3 +89,8 @@ export async function POST(request, { params }) {
   const { path } = await params;
   return forward(request, path);
 }
+
+export async function PATCH(request, { params }) {
+  const { path } = await params;
+  return forward(request, path);
+}

@@ -20,3 +20,86 @@ export const COUNTRIES = [
   { code: "PR", name: "Puerto Rico" },
   { code: "US", name: "Estados Unidos" },
 ];
+
+export const PROFESSION_ROLE_OPTIONS = [
+  "Periodista",
+  "Editor/a",
+  "Reportero/a",
+  "Productor/a",
+  "Creador/a de contenido",
+  "Comunicador/a",
+  "Investigador/a",
+  "Estudiante de periodismo",
+  "Otro",
+];
+
+export const MEDIA_TYPE_OPTIONS = [
+  "Prensa escrita",
+  "Digital",
+  "Radio",
+  "Televisión",
+  "Agencia de noticias",
+  "Freelance",
+  "Comunicación institucional",
+  "Otro",
+];
+
+export const COVERAGE_AREA_OPTIONS = [
+  "Política",
+  "Economía",
+  "Deportes",
+  "Tecnología",
+  "Ciencia",
+  "Salud",
+  "Educación",
+  "Cultura",
+  "Internacional",
+  "Investigación",
+  "Medio ambiente",
+  "Judicial",
+  "Social",
+  "Entretenimiento",
+  "Negocios",
+  "Otros",
+];
+
+export const CONTENT_TYPE_OPTIONS = [
+  "Noticias",
+  "Reportajes",
+  "Investigaciones",
+  "Entrevistas",
+  "Crónicas",
+  "Podcasts",
+  "Videos",
+  "Redes sociales",
+  "Newsletters",
+  "Otro",
+];
+
+export const AI_FAMILIARITY_OPTIONS = [
+  "Estoy comenzando",
+  "Básico",
+  "Intermedio",
+  "Avanzado",
+  "La utilizo constantemente",
+];
+
+export const AI_TOOLS_OPTIONS = [
+  "ChatGPT",
+  "Claude",
+  "Gemini",
+  "Perplexity",
+  "NotebookLM",
+  "Copilot",
+  "Canva",
+  "CapCut",
+  "ElevenLabs",
+  "Otras",
+];
+
+export const HELP_PREFERENCE_OPTIONS = [
+  "Dame respuestas rápidas",
+  "Explícame el proceso paso a paso",
+  "Enséñame a hacerlo por mi cuenta",
+  "Dame opciones y déjame decidir",
+];
