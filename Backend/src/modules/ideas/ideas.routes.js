@@ -1,11 +1,13 @@
 const express = require("express");
 const { generateInvestigationPlan } = require("./ideas.service");
+const requireCredits = require("../../middleware/credits");
+const { incrementUsedCredits } = require("../credits/credits.service");
 
 const router = express.Router();
 
 const MAX_IDEA_LENGTH = 2000;
 
-router.post("/", async (req, res, next) => {
+router.post("/", requireCredits, async (req, res, next) => {
   try {
     const { idea } = req.body;
 
@@ -18,6 +20,7 @@ router.post("/", async (req, res, next) => {
     }
 
     const plan = await generateInvestigationPlan(idea.trim());
+    await incrementUsedCredits(req.credits);
     res.json(plan);
   } catch (err) {
     next(err);
