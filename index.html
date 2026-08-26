@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PeriodistaIA — Tu copiloto editorial con IA</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Syne:wght@700;800&display=swap');
+:root {
+  --azul:#0d1b2e; --azul-medio:#162540; --azul-card:#1e3050;
+  --amarillo:#f5c400; --amarillo-suave:#ffd740;
+  --blanco:#f0f4ff; --blanco-puro:#ffffff;
+  --gris:#8fa8c8; --gris-claro:#c8d8f0;
+  --verde:#2ecc71; --rojo:#e74c3c; --naranja:#f39c12;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--azul);color:var(--blanco);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(13,27,46,0.97);backdrop-filter:blur(12px);border-bottom:1px solid rgba(245,196,0,0.18);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--blanco-puro);white-space:nowrap;}
+.nav-logo img{width:30px;height:30px;border-radius:7px;object-fit:cover;}
+.nav-logo span{color:var(--amarillo);}
+.nav-links{display:flex;gap:2px;list-style:none;overflow-x:auto;}
+.nav-links button{background:none;border:none;color:var(--gris);font-size:0.7rem;font-family:'Inter',sans-serif;padding:5px 9px;border-radius:6px;cursor:pointer;transition:all 0.2s;white-space:nowrap;font-weight:500;}
+.nav-links button:hover,.nav-links button.active{color:var(--amarillo);background:rgba(245,196,0,0.1);}
+
+/* SECCIONES */
+.seccion{display:none;min-height:100vh;padding:70px 28px 50px;max-width:900px;margin:0 auto;flex-direction:column;}
+.seccion.activa{display:flex;}
+
+/* HERO */
+.hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px 0 30px;}
+.logo-hero{width:110px;height:110px;border-radius:24px;overflow:hidden;margin-bottom:24px;border:2px solid rgba(245,196,0,0.25);box-shadow:0 0 50px rgba(245,196,0,0.1);}
+.logo-hero img{width:100%;height:100%;object-fit:cover;}
+.hero-eyebrow{font-size:0.68rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--amarillo);margin-bottom:16px;}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(2.8rem,8vw,5rem);font-weight:800;line-height:1;letter-spacing:-2px;color:var(--blanco-puro);margin-bottom:6px;}
+.hero h1 span{color:var(--amarillo);}
+.hero-tagline{font-size:1.05rem;color:var(--gris-claro);margin-bottom:8px;}
+.hero-sub{font-size:0.8rem;color:var(--gris);margin-bottom:36px;font-style:italic;}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:48px;}
+.btn-p{background:var(--amarillo);color:var(--azul);font-weight:700;font-size:0.86rem;padding:12px 24px;border-radius:10px;border:none;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;}
+.btn-p:hover{background:var(--amarillo-suave);transform:translateY(-2px);box-shadow:0 8px 24px rgba(245,196,0,0.3);}
+.btn-s{background:transparent;color:var(--gris-claro);font-weight:500;font-size:0.86rem;padding:12px 24px;border-radius:10px;border:1px solid rgba(200,216,240,0.22);cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;}
+.btn-s:hover{border-color:var(--amarillo);color:var(--amarillo);}
+.hero-stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;}
+.stat{text-align:center;}
+.stat-num{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--amarillo);line-height:1;}
+.stat-label{font-size:0.7rem;color:var(--gris);margin-top:4px;max-width:100px;}
+
+/* TITULOS */
+.sec-label{font-size:0.66rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--amarillo);margin-bottom:8px;opacity:0.85;}
+.sec-titulo{font-family:'Syne',sans-serif;font-size:clamp(1.7rem,4vw,2.6rem);font-weight:800;letter-spacing:-1px;margin-bottom:10px;line-height:1.1;color:var(--blanco-puro);}
+.sec-desc{color:var(--gris-claro);font-size:0.9rem;margin-bottom:30px;max-width:600px;line-height:1.65;}
+
+/* FUNCIONES */
+.funciones-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:11px;margin-bottom:28px;}
+.f-card{background:var(--azul-card);border:1px solid rgba(100,160,255,0.1);border-radius:13px;padding:16px;cursor:pointer;transition:all 0.22s;display:flex;align-items:flex-start;gap:12px;}
+.f-card:hover{border-color:var(--amarillo);transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,0.35);background:rgba(245,196,0,0.04);}
+.f-card.estrella{border-color:rgba(245,196,0,0.3);background:rgba(245,196,0,0.03);}
+.f-icon{font-size:1.4rem;flex-shrink:0;margin-top:2px;}
+.f-info h3{font-size:0.85rem;font-weight:600;color:var(--blanco-puro);margin-bottom:4px;}
+.f-info p{font-size:0.72rem;color:var(--gris-claro);line-height:1.5;}
+.badge{font-size:0.56rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--amarillo);background:rgba(245,196,0,0.15);padding:2px 7px;border-radius:20px;display:inline-block;margin-bottom:4px;}
+
+/* DEMO */
+.demo-box{background:var(--azul-medio);border-radius:16px;border:1px solid rgba(100,160,255,0.1);overflow:hidden;margin-bottom:20px;}
+.demo-bar{background:rgba(0,0,0,0.35);padding:11px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.05);}
+.dots{display:flex;gap:5px;}
+.dot{width:9px;height:9px;border-radius:50%;}
+.dr{background:#ff5f57;} .dy{background:#ffbd2e;} .dg{background:#28c840;}
+.demo-bar-txt{font-size:0.7rem;color:var(--gris);}
+.demo-body{padding:20px;}
+.demo-in{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:13px;color:var(--gris-claro);font-size:0.86rem;font-family:'Inter',sans-serif;line-height:1.6;margin-bottom:16px;font-style:italic;}
+.demo-in strong{color:var(--amarillo);font-style:normal;font-weight:600;}
+.demo-items{display:flex;flex-direction:column;gap:9px;}
+.d-item{background:rgba(0,0,0,0.2);border-left:3px solid var(--amarillo);border-radius:0 9px 9px 0;padding:12px 14px;}
+.d-lbl{font-size:0.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--amarillo);margin-bottom:5px;opacity:0.85;}
+.d-txt{font-size:0.82rem;color:var(--blanco);line-height:1.6;}
+.d-txt ul{list-style:none;padding:0;}
+.d-txt ul li::before{content:'→ ';color:var(--amarillo);font-weight:600;}
+
+/* FLUJO */
+.flujo{display:flex;flex-direction:column;margin-bottom:20px;}
+.f-paso{display:flex;align-items:flex-start;gap:14px;padding:16px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.f-paso:last-child{border-bottom:none;}
+.f-num{width:32px;height:32px;border-radius:50%;background:var(--amarillo);color:var(--azul);font-weight:800;font-size:0.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Syne',sans-serif;}
+.f-paso h4{font-size:0.9rem;font-weight:600;margin-bottom:3px;color:var(--blanco-puro);}
+.f-paso p{font-size:0.76rem;color:var(--gris-claro);line-height:1.55;}
+
+/* VERIFICACION */
+.v-card{background:var(--azul-medio);border-radius:14px;border:1px solid rgba(100,160,255,0.1);padding:20px;margin-bottom:14px;}
+.v-afirm{background:rgba(0,0,0,0.3);border-radius:9px;padding:12px 14px;font-size:0.86rem;color:var(--gris-claro);font-style:italic;margin-bottom:16px;border-left:3px solid var(--gris);}
+.v-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px;}
+.v-item{background:rgba(0,0,0,0.2);border-radius:9px;padding:12px;}
+.v-lbl{font-size:0.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gris);margin-bottom:4px;}
+.v-val{font-size:0.92rem;font-weight:600;color:var(--blanco-puro);}
+.v-estados{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px;}
+.estado{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:0.76rem;font-weight:600;}
+.ev{background:rgba(46,204,113,0.12);color:var(--verde);border:1px solid rgba(46,204,113,0.3);}
+.en{background:rgba(243,156,18,0.12);color:var(--naranja);border:1px solid rgba(243,156,18,0.3);}
+.er{background:rgba(231,76,60,0.12);color:var(--rojo);border:1px solid rgba(231,76,60,0.3);}
+.v-aviso{background:rgba(245,196,0,0.07);border:1px solid rgba(245,196,0,0.2);border-radius:9px;padding:10px 14px;font-size:0.76rem;color:var(--amarillo);display:flex;align-items:flex-start;gap:7px;line-height:1.5;}
+
+/* BETA */
+#sec-beta{justify-content:center;align-items:center;text-align:center;}
+.adn-tag{display:inline-block;background:rgba(245,196,0,0.1);border:1px solid rgba(245,196,0,0.2);color:var(--amarillo);font-size:0.66rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 11px;border-radius:20px;margin-bottom:16px;}
+.cierre-frase{font-family:'Syne',sans-serif;font-size:clamp(1.5rem,4vw,2.4rem);font-weight:800;line-height:1.2;letter-spacing:-1px;margin-bottom:40px;max-width:660px;color:var(--blanco-puro);}
+.la{color:var(--amarillo);}
+.lg{color:var(--gris);font-weight:400;font-size:0.7em;}
+.form-box{background:var(--azul-medio);border:1px solid rgba(245,196,0,0.22);border-radius:18px;padding:28px;max-width:440px;width:100%;margin:0 auto 24px;}
+.form-box h3{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:7px;color:var(--blanco-puro);}
+.form-box p{font-size:0.8rem;color:var(--gris-claro);margin-bottom:20px;line-height:1.6;}
+.form-link{display:block;background:var(--amarillo);color:var(--azul);font-weight:700;font-size:0.92rem;padding:14px 26px;border-radius:11px;text-decoration:none;transition:all 0.2s;margin-bottom:10px;font-family:'Inter',sans-serif;}
+.form-link:hover{background:var(--amarillo-suave);transform:translateY(-2px);box-shadow:0 8px 24px rgba(245,196,0,0.3);}
+.form-sub{font-size:0.71rem;color:var(--gris);line-height:1.5;}
+.divisor{height:1px;background:linear-gradient(90deg,transparent,rgba(245,196,0,0.3),transparent);margin:28px 0;width:100%;max-width:440px;}
+.aviso{background:rgba(231,76,60,0.07);border:1px solid rgba(231,76,60,0.2);border-radius:9px;padding:10px 14px;font-size:0.75rem;color:#ff9a8a;margin-top:12px;display:flex;gap:7px;align-items:flex-start;line-height:1.55;}
+
+@media(max-width:580px){
+  nav{padding:0 10px;}
+  .nav-logo{font-size:0.95rem;}
+  .nav-links button{font-size:0.6rem;padding:4px 6px;}
+  .seccion{padding:65px 12px 40px;}
+  .funciones-grid{grid-template-columns:1fr;}
+  .v-grid{grid-template-columns:1fr;}
+  .hero-stats{gap:18px;}
+  .form-box{padding:18px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <img src="logo.png" alt="PeriodistaIA">
+    Periodista<span>IA</span>
+  </div>
+  <ul class="nav-links">
+    <li><button onclick="ir('inicio')" id="nav-inicio" class="active">Inicio</button></li>
+    <li><button onclick="ir('funciones')" id="nav-funciones">Funciones</button></li>
+    <li><button onclick="ir('idea')" id="nav-idea">Idea → Historia</button></li>
+    <li><button onclick="ir('transcripcion')" id="nav-transcripcion">Transcripción</button></li>
+    <li><button onclick="ir('verificacion')" id="nav-verificacion">Verificación</button></li>
+    <li><button onclick="ir('beta')" id="nav-beta">Sé Beta Tester</button></li>
+  </ul>
+</nav>
+
+<!-- INICIO -->
+<section class="seccion activa" id="sec-inicio">
+  <div class="hero">
+    <div class="logo-hero"><img src="logo.png" alt="PeriodistaIA"></div>
+    <p class="hero-eyebrow">Construido por un periodista · Para periodistas del mundo</p>
+    <h1>Periodista<span>IA</span></h1>
+    <p class="hero-tagline">Tu copiloto editorial con inteligencia artificial</p>
+    <p class="hero-sub">Investiga · Verifica · Transcribe · Analiza · Prepara · Escribe mejor</p>
+    <div class="hero-ctas">
+      <button class="btn-p" onclick="ir('funciones')">Ver todas las funciones</button>
+      <button class="btn-s" onclick="ir('beta')">Quiero ser beta tester</button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num">10</div><div class="stat-label">funciones para periodistas</div></div>
+      <div class="stat"><div class="stat-num">1</div><div class="stat-label">copiloto, no otro chatbot</div></div>
+      <div class="stat"><div class="stat-num">0</div><div class="stat-label">costo durante la beta</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FUNCIONES -->
+<section class="seccion" id="sec-funciones">
+  <p class="sec-label">Lo que hace</p>
+  <h2 class="sec-titulo">¿Qué necesitas hacer hoy?</h2>
+  <p class="sec-desc">PeriodistaIA no es un generador de texto genérico. Es un asistente que entiende cómo trabaja un periodista y qué necesita en cada momento.</p>
+  <div class="funciones-grid">
+    <div class="f-card" onclick="ir('idea')">
+      <div class="f-icon">🔎</div>
+      <div class="f-info"><h3>Investigar una historia</h3><p>Antecedentes, fuentes, preguntas de investigación y ángulos posibles desde cero.</p></div>
+    </div>
+    <div class="f-card estrella" onclick="ir('idea')">
+      <div class="f-icon">💡</div>
+      <div class="f-info"><div class="badge">⭐ Función estrella</div><h3>Tengo una idea para una historia</h3><p>Convierte cualquier observación en un plan completo de investigación.</p></div>
+    </div>
+    <div class="f-card" onclick="ir('verificacion')">
+      <div class="f-icon">🔍</div>
+      <div class="f-info"><h3>Verificar información</h3><p>Pega una afirmación. Recibe fuentes, contradicciones y nivel de confianza.</p></div>
+    </div>
+    <div class="f-card">
+      <div class="f-icon">📄</div>
+      <div class="f-info"><h3>Analizar documentos</h3><p>Sube PDFs, contratos, sentencias. Encuentra datos, personas e historias ocultas.</p></div>
+    </div>
+    <div class="f-card">
+      <div class="f-icon">🎙️</div>
+      <div class="f-info"><h3>Preparar una entrevista</h3><p>Preguntas básicas, incómodas y de seguimiento. Incluye simulador de práctica.</p></div>
+    </div>
+    <div class="f-card estrella" onclick="ir('transcripcion')">
+      <div class="f-icon">🎧</div>
+      <div class="f-info"><div class="badge">⭐ Función estrella</div><h3>Transcribir una entrevista</h3><p>Sube el audio y obtén la transcripción completa con las citas más relevantes.</p></div>
+    </div>
+    <div class="f-card estrella" onclick="ir('transcripcion')">
+      <div class="f-icon">📰</div>
+      <div class="f-info"><div class="badge">⭐ Función estrella</div><h3>De la transcripción a la nota</h3><p>Convierte automáticamente una entrevista en nota periodística o de prensa.</p></div>
+    </div>
+    <div class="f-card">
+      <div class="f-icon">✍️</div>
+      <div class="f-info"><h3>Revisar mi noticia</h3><p>Tu editor antes de publicar. Detecta afirmaciones sin fuente y errores de atribución.</p></div>
+    </div>
+    <div class="f-card">
+      <div class="f-icon">📊</div>
+      <div class="f-info"><h3>Encontrar patrones en datos</h3><p>Sube un Excel o CSV. Detecta tendencias, valores atípicos e historias posibles.</p></div>
+    </div>
+    <div class="f-card">
+      <div class="f-icon">🤖</div>
+      <div class="f-info"><h3>¿Qué herramienta de IA usar?</h3><p>Cuéntale tu problema. Recibe un flujo paso a paso con las mejores herramientas.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- IDEA -->
+<section class="seccion" id="sec-idea">
+  <p class="sec-label">Función estrella</p>
+  <h2 class="sec-titulo">Tengo una idea.<br>PeriodistaIA la convierte en historia.</h2>
+  <p class="sec-desc">El periodista llega con cualquier observación, dato o sospecha. El copiloto la transforma en un plan de investigación completo y accionable.</p>
+  <div class="demo-box">
+    <div class="demo-bar">
+      <div class="dots"><div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div></div>
+      <div class="demo-bar-txt">PeriodistaIA — Modo: Idea para una historia</div>
+    </div>
+    <div class="demo-body">
+      <div class="demo-in">💬 <strong>Periodista escribe:</strong> "El Gobierno anunció una inversión de US$100 millones en infraestructura vial pero no especificó los contratos."</div>
+      <div class="demo-items">
+        <div class="d-item"><div class="d-lbl">Pregunta central</div><div class="d-txt">¿A quiénes se adjudicaron los contratos y bajo qué proceso de selección?</div></div>
+        <div class="d-item"><div class="d-lbl">Documentos que debes solicitar</div><div class="d-txt"><ul><li>Resoluciones de adjudicación</li><li>Contratos firmados y montos específicos</li><li>Registro en el portal de compras públicas</li><li>Informes de auditoría de obras similares</li></ul></div></div>
+        <div class="d-item"><div class="d-lbl">Posibles ángulos</div><div class="d-txt"><ul><li>¿Quién gana? Identificar empresas beneficiadas</li><li>¿Qué no dice el comunicado? Lo que falta</li><li>Comparación histórica con proyectos similares</li><li>Impacto ciudadano real vs. promesa oficial</li></ul></div></div>
+        <div class="d-item"><div class="d-lbl">Personas a entrevistar</div><div class="d-txt">Titular de obras públicas · Experto en contratación pública · Beneficiarios directos · Veedores ciudadanos</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="aviso">⚠️ <span><strong>Importante:</strong> PeriodistaIA te ayuda a formular hipótesis, no a confirmarlas. La verificación y la responsabilidad editorial siguen siendo tuyas.</span></div>
+</section>
+
+<!-- TRANSCRIPCION -->
+<section class="seccion" id="sec-transcripcion">
+  <p class="sec-label">Función estrella</p>
+  <h2 class="sec-titulo">De la entrevista a la nota en segundos.</h2>
+  <p class="sec-desc">Sube el audio de tu entrevista. PeriodistaIA transcribe, extrae las mejores citas y genera el borrador de tu nota periodística o comunicado de prensa.</p>
+  <div class="flujo">
+    <div class="f-paso"><div class="f-num">1</div><div><h4>Sube el audio de la entrevista</h4><p>Formatos compatibles: MP3, MP4, WAV, M4A. Desde 5 minutos hasta varias horas.</p></div></div>
+    <div class="f-paso"><div class="f-num">2</div><div><h4>Transcripción automática completa</h4><p>PeriodistaIA identifica cada hablante, separa preguntas de respuestas y produce el texto completo.</p></div></div>
+    <div class="f-paso"><div class="f-num">3</div><div><h4>Extracción de citas clave</h4><p>Detecta las declaraciones más relevantes, los datos mencionados y los momentos de mayor impacto.</p></div></div>
+    <div class="f-paso"><div class="f-num">4</div><div><h4>Borrador de la nota periodística</h4><p>Genera el borrador en pirámide invertida con las citas ya integradas, listo para que edites y publiques.</p></div></div>
+    <div class="f-paso"><div class="f-num">5</div><div><h4>¿Necesitas una nota de prensa? También.</h4><p>PeriodistaIA adapta el contenido al formato de comunicado institucional con estructura profesional.</p></div></div>
+  </div>
+  <div class="aviso">⚠️ <span><strong>Antes de publicar:</strong> Verifica siempre las citas directamente contra el audio original. La precisión final es responsabilidad del periodista.</span></div>
+</section>
+
+<!-- VERIFICACION -->
+<section class="seccion" id="sec-verificacion">
+  <p class="sec-label">Periodismo responsable</p>
+  <h2 class="sec-titulo">Verifica antes de publicar.</h2>
+  <p class="sec-desc">Pega cualquier afirmación. PeriodistaIA busca fuentes, detecta contradicciones y te dice cuánto puedes confiar en esa información.</p>
+  <div class="v-card">
+    <div class="v-afirm">💬 "En los últimos cinco años el desempleo juvenil en la región aumentó un 20%."</div>
+    <div class="v-grid">
+      <div class="v-item"><div class="v-lbl">Fuentes encontradas</div><div class="v-val">7 fuentes</div></div>
+      <div class="v-item"><div class="v-lbl">Fuentes primarias</div><div class="v-val">3 confirmadas</div></div>
+      <div class="v-item"><div class="v-lbl">Contradicciones</div><div class="v-val">2 detectadas</div></div>
+      <div class="v-item"><div class="v-lbl">Período verificado</div><div class="v-val">2019 – 2024</div></div>
+    </div>
+    <div class="v-estados">
+      <div class="estado ev">🟢 Confirmado</div>
+      <div class="estado en">🟡 Parcialmente confirmado</div>
+      <div class="estado er">🔴 No confirmado</div>
+    </div>
+    <div class="v-aviso">⚠️ La verificación final corresponde siempre al periodista. PeriodistaIA no reemplaza el juicio editorial — lo apoya.</div>
+  </div>
+</section>
+
+<!-- BETA -->
+<section class="seccion" id="sec-beta">
+  <div class="adn-tag">ADN del producto</div>
+  <div class="cierre-frase">
+    La IA no tiene la respuesta.<br>
+    <span class="la">Te ayuda a encontrarla.</span><br>
+    <span class="lg">Tu trabajo es demostrarla.</span>
+  </div>
+  <div class="form-box">
+    <h3>Sé beta tester gratuito</h3>
+    <p>Ayúdame a construir la herramienta que los periodistas realmente necesitan. Sin costo, sin compromiso. Solo tu opinión honesta.</p>
+    <a class="form-link" href="https://tinyurl.com/37wn44zf" target="_blank">📋 Llenar el formulario — 5 minutos</a>
+    <p class="form-sub">O escribe <strong>PERIODISTA</strong> en los comentarios de LinkedIn y te contacto personalmente.</p>
+  </div>
+  <div class="divisor"></div>
+  <p style="font-size:0.76rem;color:var(--gris);max-width:460px;text-align:center;line-height:1.7;">
+    PeriodistaIA está siendo construido por <strong style="color:var(--gris-claro);">Jesús Manuel Jiménez</strong>, periodista con más de 16 años de experiencia, para periodistas de cualquier parte del mundo.
+  </p>
+</section>
+
+<script>
+function ir(s) {
+  document.querySelectorAll('.seccion').forEach(x => x.classList.remove('activa'));
+  document.querySelectorAll('.nav-links button').forEach(x => x.classList.remove('active'));
+  document.getElementById('sec-' + s).classList.add('activa');
+  document.getElementById('nav-' + s).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+</script>
+</body>
+</html>

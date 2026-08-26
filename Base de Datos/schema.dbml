@@ -1,0 +1,155 @@
+Table users {
+  id uuid [pk]
+  email text [unique, not null]
+  full_name text
+  country text
+  language_variant text
+  avatar_url text
+  plan text
+  plan_started_at timestamp
+  plan_expires_at timestamp
+  newsroom_id uuid
+  role text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table newsrooms {
+  id uuid [pk]
+  name text
+  slug text [unique]
+  logo_url text
+  country text
+  editorial_policy text
+  max_users integer
+  plan_expires_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table credits {
+  id uuid [pk]
+  user_id uuid
+  plan text
+  total_credits integer
+  used_credits integer
+  reset_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table projects {
+  id uuid [pk]
+  user_id uuid
+  newsroom_id uuid
+  title text
+  description text
+  status text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table sessions {
+  id uuid [pk]
+  user_id uuid
+  project_id uuid
+  function_used text
+  title text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table messages {
+  id uuid [pk]
+  session_id uuid
+  role text
+  content text
+  created_at timestamp
+}
+
+Table transcriptions {
+  id uuid [pk]
+  user_id uuid
+  session_id uuid
+  project_id uuid
+  audio_source text
+  audio_url text
+  audio_duration_secs integer
+  file_size_bytes integer
+  transcript_text text
+  language_detected text
+  status text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table articles {
+  id uuid [pk]
+  user_id uuid
+  session_id uuid
+  project_id uuid
+  transcription_id uuid
+  type text
+  organization_name text
+  title text
+  body text
+  language text
+  word_count integer
+  status text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table downloads {
+  id uuid [pk]
+  user_id uuid
+  article_id uuid
+  format text
+  created_at timestamp
+}
+
+Table sources {
+  id uuid [pk]
+  user_id uuid
+  session_id uuid
+  project_id uuid
+  claim text
+  verdict text
+  confidence_level text
+  explanation text
+  sources_used text
+  created_at timestamp
+}
+
+Table payments {
+  id uuid [pk]
+  user_id uuid
+  amount decimal
+  currency text
+  plan text
+  payment_method text
+  external_payment_id text
+  status text
+  created_at timestamp
+}
+
+Ref: users.newsroom_id > newsrooms.id
+Ref: credits.user_id > users.id
+Ref: projects.user_id > users.id
+Ref: projects.newsroom_id > newsrooms.id
+Ref: sessions.user_id > users.id
+Ref: sessions.project_id > projects.id
+Ref: messages.session_id > sessions.id
+Ref: transcriptions.user_id > users.id
+Ref: transcriptions.session_id > sessions.id
+Ref: transcriptions.project_id > projects.id
+Ref: articles.user_id > users.id
+Ref: articles.session_id > sessions.id
+Ref: articles.project_id > projects.id
+Ref: articles.transcription_id > transcriptions.id
+Ref: downloads.user_id > users.id
+Ref: downloads.article_id > articles.id
+Ref: sources.user_id > users.id
+Ref: sources.session_id > sessions.id
+Ref: sources.project_id > projects.id
+Ref: payments.user_id > users.id

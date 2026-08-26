@@ -1,0 +1,18 @@
+{
+  "name": "periodista-ia-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend de PeriodistaIA — copiloto editorial con IA para periodistas",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "zod": "^4.0.0"
+  }
+}
