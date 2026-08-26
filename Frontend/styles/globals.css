@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-blue: #1b2b4b;
+  --color-brand-yellow: #f5c518;
+  --color-brand-bg: #f8f9fa;
+  --color-brand-text: #1a1a2e;
+  --color-brand-success: #22c55e;
+  --color-brand-error: #ef4444;
+  --color-brand-border: #e2e8f0;
+  --radius-brand: 12px;
+}
+
+body {
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-text);
+  font-family: "Inter", system-ui, sans-serif;
+}

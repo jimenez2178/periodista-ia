@@ -3,14 +3,14 @@ const env = require("../../config/env");
 const { createUserProfile } = require("../users/users.service");
 const { initializeFreeCredits } = require("../credits/credits.service");
 
-async function register(email, password, full_name) {
+async function register(email, password, full_name, country) {
   const { data, error } = await supabaseAuth.auth.signUp({ email, password });
   if (error) throw error;
 
   const user = data.user;
 
   try {
-    await createUserProfile({ id: user.id, email: user.email, full_name });
+    await createUserProfile({ id: user.id, email: user.email, full_name, country });
     await initializeFreeCredits(user.id);
   } catch (profileError) {
     // El usuario ya existe en auth.users pero no tiene perfil: revertimos

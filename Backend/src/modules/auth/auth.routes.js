@@ -1,6 +1,7 @@
 const express = require("express");
 const requireAuth = require("../../middleware/auth");
 const authService = require("./auth.service");
+const { getUserProfile } = require("../users/users.service");
 
 const router = express.Router();
 
@@ -17,7 +18,7 @@ function isValidPassword(password) {
 
 router.post("/register", async (req, res, next) => {
   try {
-    const { email, password, full_name } = req.body;
+    const { email, password, full_name, country } = req.body;
 
     if (!isValidEmail(email)) {
       return res.status(400).json({ error: "Email inválido." });
@@ -26,7 +27,7 @@ router.post("/register", async (req, res, next) => {
       return res.status(400).json({ error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.` });
     }
 
-    const result = await authService.register(email, password, full_name);
+    const result = await authService.register(email, password, full_name, country);
     res.status(201).json(result);
   } catch (err) {
     next(err);
@@ -90,8 +91,13 @@ router.post("/reset-password", async (req, res, next) => {
   }
 });
 
-router.get("/me", requireAuth, (req, res) => {
-  res.json({ user: req.user });
+router.get("/me", requireAuth, async (req, res, next) => {
+  try {
+    const profile = await getUserProfile(req.user.id);
+    res.json({ user: { ...req.user, ...profile } });
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;
