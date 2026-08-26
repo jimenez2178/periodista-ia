@@ -28,6 +28,17 @@ export default function TopBar({ onMenuClick }) {
 
       <div className="flex items-center gap-3 md:gap-4">
         <CreditsBadge />
+        {user?.plan === "free" && (
+          <a
+            href="https://www.paypal.com/ncp/payment/7SU7K8LUPGFXN"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-9 items-center rounded-brand bg-brand-yellow px-3 text-sm font-bold text-brand-blue transition-colors hover:bg-brand-yellow/90"
+          >
+            <span className="sm:hidden">⚡ Pro</span>
+            <span className="hidden sm:inline">⚡ Ir a Pro</span>
+          </a>
+        )}
         {user?.avatar_url ? (
           <Image
             src={user.avatar_url}

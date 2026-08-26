@@ -10,6 +10,7 @@ const sourcesRoutes = require("./modules/sources/sources.routes");
 const transcriptionsRoutes = require("./modules/transcriptions/transcriptions.routes");
 const articlesRoutes = require("./modules/articles/articles.routes");
 const usersRoutes = require("./modules/users/users.routes");
+const assistantRoutes = require("./modules/assistant/assistant.routes");
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use("/api/sources", requireAuth, sourcesRoutes);
 app.use("/api/transcriptions", requireAuth, transcriptionsRoutes);
 app.use("/api/articles", requireAuth, articlesRoutes);
 app.use("/api/users", requireAuth, usersRoutes);
+app.use("/api/assistant", requireAuth, assistantRoutes);
 
 app.use(errorHandler);
 

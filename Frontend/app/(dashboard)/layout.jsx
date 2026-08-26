@@ -7,6 +7,7 @@ import { CreditsProvider } from "../../context/CreditsContext";
 import Sidebar from "../../components/layout/Sidebar";
 import TopBar from "../../components/layout/TopBar";
 import PageWrapper from "../../components/layout/PageWrapper";
+import AssistantButton from "../../components/assistant/AssistantButton";
 
 export default function DashboardLayout({ children }) {
   const { user, loading } = useAuth();
@@ -37,6 +38,7 @@ export default function DashboardLayout({ children }) {
           <PageWrapper>{children}</PageWrapper>
         </div>
       </div>
+      <AssistantButton />
     </CreditsProvider>
   );
 }
