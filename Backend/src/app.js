@@ -6,6 +6,7 @@ const requireAuth = require("./middleware/auth");
 const authRoutes = require("./modules/auth/auth.routes");
 const ideasRoutes = require("./modules/ideas/ideas.routes");
 const creditsRoutes = require("./modules/credits/credits.routes");
+const sourcesRoutes = require("./modules/sources/sources.routes");
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/ideas", requireAuth, ideasRoutes);
 app.use("/api/credits", requireAuth, creditsRoutes);
+app.use("/api/sources", requireAuth, sourcesRoutes);
 
 app.use(errorHandler);
 
