@@ -10,18 +10,35 @@ async function forward(request, pathSegments) {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
 
-  const headers = { "Content-Type": "application/json" };
+  const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const method = request.method;
   const hasBody = method !== "GET" && method !== "HEAD";
+  const incomingContentType = request.headers.get("content-type") || "";
+  const isMultipart = incomingContentType.startsWith("multipart/form-data");
+
+  let body;
+  if (hasBody) {
+    if (isMultipart) {
+      // Los archivos (ej. audio) van como stream binario, con el
+      // Content-Type original (boundary incluido) — request.text()
+      // corrompería los bytes binarios.
+      headers["Content-Type"] = incomingContentType;
+      body = request.body;
+    } else {
+      headers["Content-Type"] = "application/json";
+      body = await request.text();
+    }
+  }
 
   let backendResponse;
   try {
     backendResponse = await fetch(`${BACKEND_URL}/api/${path}`, {
       method,
       headers,
-      body: hasBody ? await request.text() : undefined,
+      body,
+      duplex: isMultipart ? "half" : undefined,
     });
   } catch {
     return NextResponse.json({ error: "No se pudo conectar con el servidor." }, { status: 502 });

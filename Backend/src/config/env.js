@@ -5,6 +5,7 @@ const required = [
   "SUPABASE_URL",
   "SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
+  "OPENAI_API_KEY",
 ];
 
 const missing = required.filter((key) => !process.env[key]);
