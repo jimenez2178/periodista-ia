@@ -31,9 +31,12 @@ export default function DocumentsPage() {
       setResult(data);
       refreshCredits();
     } catch (err) {
-      if (err.status === 402) {
+      if (err.status === 402 && err.code === "DOCUMENT_TOO_LARGE") {
+        setError(
+          "Tu documento supera el límite del plan gratuito (5 páginas o 50KB). Actualiza a Pro para analizar documentos más grandes."
+        );
+      } else if (err.status === 402) {
         setNeedsUpgrade(true);
-        if (err.code === "DOCUMENT_TOO_LARGE") setError(err.message);
       } else {
         setError(err.message);
       }
