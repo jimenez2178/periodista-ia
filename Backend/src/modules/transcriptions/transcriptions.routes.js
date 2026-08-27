@@ -62,7 +62,18 @@ router.post("/", requireCredits, upload.single("audio"), async (req, res, next) 
       });
     }
 
-    const { text, language, duration } = await transcribeAudio(buffer, filename);
+    let text, language, duration;
+    try {
+      ({ text, language, duration } = await transcribeAudio(buffer, filename));
+    } catch (transcribeError) {
+      console.error("Error transcribiendo audio con Whisper:", transcribeError);
+      return res.status(422).json({
+        error:
+          "No pudimos leer este archivo de audio. Puede estar dañado o incompleto (esto pasa seguido con audios exportados de WhatsApp). Intenta exportarlo de nuevo o prueba con otro archivo.",
+        code: "AUDIO_UNREADABLE",
+      });
+    }
+
     await incrementUsedCredits(req.credits);
 
     const transcription = await saveTranscription({
