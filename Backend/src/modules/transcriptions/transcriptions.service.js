@@ -41,8 +41,22 @@ async function getAudioDuration(buffer, mimeType) {
   return metadata?.format?.duration ? Math.round(metadata.format.duration) : null;
 }
 
+// Whisper decide el formato por la extension del nombre de archivo, no por el
+// contenido real. WhatsApp Desktop siempre nombra los audios descargados con
+// ".mp4" sin importar el contenedor real, y Whisper rechaza con "Invalid file
+// format" un M4A (ftyp "M4A ") subido con extension .mp4 -- el mismo archivo
+// renombrado a .m4a se transcribe sin problema. Por eso detectamos el
+// contenedor real por sus bytes en vez de confiar en la extension recibida.
+function detectM4aMislabeledAsMp4(buffer) {
+  if (buffer.length < 12) return false;
+  if (buffer.toString("ascii", 4, 8) !== "ftyp") return false;
+  const majorBrand = buffer.toString("ascii", 8, 12).trim();
+  return majorBrand === "M4A" || majorBrand === "M4B";
+}
+
 async function transcribeAudio(buffer, filename) {
-  const file = await toFile(buffer, filename);
+  const safeFilename = detectM4aMislabeledAsMp4(buffer) ? "audio.m4a" : filename;
+  const file = await toFile(buffer, safeFilename);
   const transcription = await openai.audio.transcriptions.create({
     file,
     model: "whisper-1",
