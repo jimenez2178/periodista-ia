@@ -7,7 +7,9 @@ import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
 import Button from "../../../components/ui/Button";
+import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import { verifyClaim } from "../../../services/sources.service";
+import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 
 export default function VerificationPage() {
@@ -17,7 +19,13 @@ export default function VerificationPage() {
   const [error, setError] = useState("");
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [showSaveModal, setShowSaveModal] = useState(false);
   const { refreshCredits } = useCredits();
+
+  async function handleSaveToProject(projectId) {
+    await addItemToProject({ projectId, type: "source", itemId: result.id });
+    setToastMessage("Guardado en el proyecto.");
+  }
 
   async function handleVerify() {
     setLoading(true);
@@ -72,12 +80,18 @@ export default function VerificationPage() {
             <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
               Nueva verificación
             </Button>
-            <Button onClick={() => setToastMessage("Próximamente")} className="w-full sm:w-auto">
+            <Button onClick={() => setShowSaveModal(true)} className="w-full sm:w-auto">
               Guardar en proyecto →
             </Button>
           </div>
         </>
       )}
+
+      <SaveToProjectModal
+        open={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onConfirm={handleSaveToProject}
+      />
 
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage("")} />}
     </div>

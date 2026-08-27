@@ -8,8 +8,10 @@ import PressReleaseForm from "../../../components/transcription/PressReleaseForm
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
+import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import { transcribe } from "../../../services/transcriptions.service";
 import { generateArticle } from "../../../services/articles.service";
+import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 
 export default function TranscriptionPage() {
@@ -24,6 +26,12 @@ export default function TranscriptionPage() {
   const [error, setError] = useState("");
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [showSaveModal, setShowSaveModal] = useState(false);
+
+  async function handleSaveToProject(projectId) {
+    await addItemToProject({ projectId, type: "article", itemId: article.id });
+    setToastMessage("Guardado en el proyecto.");
+  }
 
   async function handleTranscribe(input) {
     setTranscribing(true);
@@ -120,7 +128,7 @@ export default function TranscriptionPage() {
         <ArticleResult
           article={article}
           onArticleChange={setArticle}
-          onSaveToProject={() => setToastMessage("Próximamente")}
+          onSaveToProject={() => setShowSaveModal(true)}
           onReset={handleReset}
         />
       )}
@@ -129,6 +137,12 @@ export default function TranscriptionPage() {
         open={showPressReleaseModal}
         onClose={() => setShowPressReleaseModal(false)}
         onSubmit={(orgName) => handleGenerateArticle("press_release", orgName)}
+      />
+
+      <SaveToProjectModal
+        open={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onConfirm={handleSaveToProject}
       />
 
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage("")} />}

@@ -21,9 +21,9 @@ router.post("/", requireCredits, async (req, res, next) => {
 
     const result = await generateVerification(claim.trim());
     await incrementUsedCredits(req.credits);
-    await saveSourceVerification({ userId: req.user.id, claim: claim.trim(), result });
+    const saved = await saveSourceVerification({ userId: req.user.id, claim: claim.trim(), result });
 
-    res.json(result);
+    res.json({ ...result, id: saved.id });
   } catch (err) {
     next(err);
   }

@@ -7,7 +7,9 @@ import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
 import Button from "../../../components/ui/Button";
+import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import { generateInvestigationPlan } from "../../../services/ideas.service";
+import { saveIdeaSession } from "../../../services/sessions.service";
 import { useCredits } from "../../../hooks/useCredits";
 
 export default function IdeaPage() {
@@ -17,7 +19,13 @@ export default function IdeaPage() {
   const [error, setError] = useState("");
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [showSaveModal, setShowSaveModal] = useState(false);
   const { refreshCredits } = useCredits();
+
+  async function handleSaveToProject(projectId) {
+    await saveIdeaSession({ idea: idea.trim(), plan, projectId });
+    setToastMessage("Guardado en el proyecto.");
+  }
 
   async function handleGenerate() {
     setLoading(true);
@@ -74,12 +82,18 @@ export default function IdeaPage() {
             <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
               Nueva idea
             </Button>
-            <Button onClick={() => setToastMessage("Próximamente")} className="w-full sm:w-auto">
+            <Button onClick={() => setShowSaveModal(true)} className="w-full sm:w-auto">
               Guardar en proyecto →
             </Button>
           </div>
         </>
       )}
+
+      <SaveToProjectModal
+        open={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onConfirm={handleSaveToProject}
+      />
 
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage("")} />}
     </div>

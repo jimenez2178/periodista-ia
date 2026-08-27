@@ -10,3 +10,14 @@ export function getInitials(name) {
   const parts = name.trim().split(/\s+/).slice(0, 2);
   return parts.map((part) => part[0]?.toUpperCase() || "").join("");
 }
+
+const ITEM_TYPE_META = {
+  article: { emoji: "🎙️", label: "Nota" },
+  transcription: { emoji: "🎙️", label: "Transcripción" },
+  source: { emoji: "🔍", label: "Verificación" },
+  idea: { emoji: "💡", label: "Idea" },
+};
+
+export function getItemTypeMeta(type) {
+  return ITEM_TYPE_META[type] || { emoji: "📄", label: "Elemento" };
+}
