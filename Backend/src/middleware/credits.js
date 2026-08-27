@@ -3,6 +3,12 @@ const { getCreditsForUser } = require("../modules/credits/credits.service");
 async function requireCredits(req, res, next) {
   try {
     const credits = await getCreditsForUser(req.user.id);
+
+    if (credits.plan === "pro" || credits.plan === "newsroom") {
+      req.credits = credits;
+      return next();
+    }
+
     const available = credits.total_credits - credits.used_credits;
 
     if (available <= 0) {
