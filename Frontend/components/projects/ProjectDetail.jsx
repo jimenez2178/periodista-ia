@@ -1,5 +1,5 @@
 import Card from "../ui/Card";
-import { getItemTypeMeta } from "../../utils/formatters";
+import SessionCard from "../history/SessionCard";
 
 export default function ProjectDetail({ project }) {
   return (
@@ -21,28 +21,9 @@ export default function ProjectDetail({ project }) {
           </Card>
         ) : (
           <div className="flex flex-col gap-3">
-            {project.items.map((item) => {
-              const meta = getItemTypeMeta(item.type);
-              return (
-                <Card key={`${item.type}-${item.id}`} className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span>{meta.emoji}</span>
-                    <span className="text-xs font-medium uppercase tracking-wide text-brand-text/50">
-                      {meta.label}
-                    </span>
-                    <span className="ml-auto text-xs text-brand-text/50">
-                      {new Date(item.created_at).toLocaleDateString("es", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </div>
-                  <h3 className="font-medium text-brand-text">{item.title}</h3>
-                  {item.subtitle && <p className="text-sm text-brand-text/70">{item.subtitle}</p>}
-                </Card>
-              );
-            })}
+            {project.items.map((item) => (
+              <SessionCard key={`${item.type}-${item.id}`} item={item} />
+            ))}
           </div>
         )}
       </div>

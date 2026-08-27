@@ -12,14 +12,17 @@ function truncate(text, length = 160) {
   return clean.length > length ? `${clean.slice(0, length)}…` : clean;
 }
 
-function summarizePlan(content) {
-  if (!content) return "Plan de investigación guardado.";
+function parsePlan(content) {
+  if (!content) return null;
   try {
-    const plan = JSON.parse(content);
-    return truncate(plan.angle_suggestions?.[0]) || "Plan de investigación guardado.";
+    return JSON.parse(content);
   } catch {
-    return truncate(content);
+    return null;
   }
+}
+
+function summarizePlan(plan) {
+  return truncate(plan?.angle_suggestions?.[0]) || "Plan de investigación guardado.";
 }
 
 function normalizeItems({ articles, sources, transcriptions, sessions }) {
@@ -30,6 +33,7 @@ function normalizeItems({ articles, sources, transcriptions, sessions }) {
       title: a.title,
       subtitle: truncate(a.body),
       created_at: a.created_at,
+      detail: { title: a.title, body: a.body },
     })),
     ...sources.map((s) => ({
       id: s.id,
@@ -37,6 +41,13 @@ function normalizeItems({ articles, sources, transcriptions, sessions }) {
       title: s.claim,
       subtitle: `${s.verdict} — ${truncate(s.explanation)}`,
       created_at: s.created_at,
+      detail: {
+        claim: s.claim,
+        verdict: s.verdict,
+        confidence_level: s.confidence_level,
+        explanation: s.explanation,
+        sources_used: s.sources_used || [],
+      },
     })),
     ...transcriptions.map((t) => ({
       id: t.id,
@@ -44,14 +55,20 @@ function normalizeItems({ articles, sources, transcriptions, sessions }) {
       title: "Transcripción de audio",
       subtitle: truncate(t.transcript_text),
       created_at: t.created_at,
+      detail: { transcript_text: t.transcript_text },
     })),
-    ...sessions.map((s) => ({
-      id: s.id,
-      type: "idea",
-      title: s.title || "Idea",
-      subtitle: summarizePlan((s.messages || []).find((m) => m.role === "assistant")?.content),
-      created_at: s.created_at,
-    })),
+    ...sessions.map((s) => {
+      const idea = (s.messages || []).find((m) => m.role === "user")?.content;
+      const plan = parsePlan((s.messages || []).find((m) => m.role === "assistant")?.content);
+      return {
+        id: s.id,
+        type: "idea",
+        title: s.title || "Idea",
+        subtitle: summarizePlan(plan),
+        created_at: s.created_at,
+        detail: { idea: idea || s.title, plan },
+      };
+    }),
   ];
 
   items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -110,7 +127,10 @@ async function getProjectWithItems({ projectId, userId }) {
 
   const [articlesRes, sourcesRes, transcriptionsRes, sessionsRes] = await Promise.all([
     supabaseAdmin.from("articles").select("id, title, body, created_at").eq("project_id", projectId),
-    supabaseAdmin.from("sources").select("id, claim, verdict, explanation, created_at").eq("project_id", projectId),
+    supabaseAdmin
+      .from("sources")
+      .select("id, claim, verdict, confidence_level, explanation, sources_used, created_at")
+      .eq("project_id", projectId),
     supabaseAdmin.from("transcriptions").select("id, transcript_text, created_at").eq("project_id", projectId),
     supabaseAdmin
       .from("sessions")
