@@ -2,8 +2,15 @@ const express = require("express");
 const multer = require("multer");
 const requireCredits = require("../../middleware/credits");
 const { incrementUsedCredits } = require("../credits/credits.service");
-const { getAudioDuration, transcribeAudio, saveTranscription } = require("./transcriptions.service");
+const {
+  getAudioDuration,
+  transcribeAudio,
+  saveTranscription,
+  analyzeInterview,
+  updateTranscriptionAnalysis,
+} = require("./transcriptions.service");
 const { downloadAudioFromUrl, MAX_AUDIO_BYTES } = require("../../utils/audioProcessor");
+const { supabaseAdmin } = require("../../config/supabase");
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_AUDIO_BYTES } });
 const router = express.Router();
@@ -74,6 +81,33 @@ router.post("/", requireCredits, upload.single("audio"), async (req, res, next) 
       language,
       duration: transcription.audio_duration_secs,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/analyze", async (req, res, next) => {
+  try {
+    const { transcription_id } = req.body;
+
+    if (typeof transcription_id !== "string" || !transcription_id) {
+      return res.status(400).json({ error: "Falta 'transcription_id'." });
+    }
+
+    const { data: transcription, error } = await supabaseAdmin
+      .from("transcriptions")
+      .select("transcript_text, user_id")
+      .eq("id", transcription_id)
+      .single();
+
+    if (error || !transcription || transcription.user_id !== req.user.id) {
+      return res.status(404).json({ error: "No se encontró la transcripción." });
+    }
+
+    const analysis = await analyzeInterview(transcription.transcript_text);
+    await updateTranscriptionAnalysis({ transcriptionId: transcription_id, analysis });
+
+    res.json(analysis);
   } catch (err) {
     next(err);
   }

@@ -6,7 +6,7 @@ const FEATURES = [
   {
     href: "/transcription",
     emoji: "🎙️",
-    title: "Audio a Nota",
+    title: "De entrevista a noticia",
     description: "Transcribe tu entrevista y genera tu nota en segundos",
   },
   {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AudioUploader from "../../../components/transcription/AudioUploader";
 import TranscriptionResult from "../../../components/transcription/TranscriptionResult";
+import InterviewAnalysis from "../../../components/transcription/InterviewAnalysis";
 import ArticleResult from "../../../components/transcription/ArticleResult";
 import PressReleaseForm from "../../../components/transcription/PressReleaseForm";
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
@@ -12,7 +13,7 @@ import Toast from "../../../components/ui/Toast";
 import Button from "../../../components/ui/Button";
 import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
-import { transcribe } from "../../../services/transcriptions.service";
+import { transcribe, analyzeInterview } from "../../../services/transcriptions.service";
 import { generateArticle } from "../../../services/articles.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
@@ -29,6 +30,8 @@ export default function TranscriptionPage() {
 
   const [transcribing, setTranscribing] = useState(false);
   const [transcription, setTranscription] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [interviewAnalysis, setInterviewAnalysis] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [article, setArticle] = useState(null);
   const [showPressReleaseModal, setShowPressReleaseModal] = useState(false);
@@ -62,6 +65,17 @@ export default function TranscriptionPage() {
       const data = await transcribe(input);
       setTranscription(data);
       refreshCredits();
+
+      setAnalyzing(true);
+      try {
+        const analysis = await analyzeInterview(data.transcription_id);
+        setInterviewAnalysis(analysis);
+      } catch {
+        // El análisis es un extra sobre la transcripción ya pagada — si falla,
+        // el periodista igual puede ver su transcripción y generar la nota.
+      } finally {
+        setAnalyzing(false);
+      }
     } catch (err) {
       if (err.status === 402) {
         setNeedsUpgrade(true);
@@ -101,6 +115,8 @@ export default function TranscriptionPage() {
 
   function handleReset() {
     setTranscription(null);
+    setAnalyzing(false);
+    setInterviewAnalysis(null);
     setArticle(null);
     setError("");
     setNeedsUpgrade(false);
@@ -109,7 +125,7 @@ export default function TranscriptionPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-brand-text">🎙️ Audio a Nota</h1>
+        <h1 className="text-2xl font-bold text-brand-text">🎙️ De entrevista a noticia</h1>
         <p className="mt-1 text-sm text-brand-text/70">Transcribe tu entrevista y genera tu nota en segundos.</p>
       </div>
 
@@ -127,14 +143,24 @@ export default function TranscriptionPage() {
         </div>
       )}
 
-      {transcription && !article && (
-        <TranscriptionResult
-          transcript={transcription.transcript}
-          language={transcription.language}
-          disabled={generating}
-          onGenerateNews={() => handleGenerateArticle("news_article")}
-          onGeneratePressRelease={() => setShowPressReleaseModal(true)}
-        />
+      {analyzing && (
+        <div className="flex items-center justify-center gap-3 py-8">
+          <Spinner />
+          <span className="text-brand-text/70">Analizando tu entrevista...</span>
+        </div>
+      )}
+
+      {transcription && !analyzing && !article && (
+        <>
+          {interviewAnalysis && <InterviewAnalysis analysis={interviewAnalysis} />}
+          <TranscriptionResult
+            transcript={transcription.transcript}
+            language={transcription.language}
+            disabled={generating}
+            onGenerateNews={() => handleGenerateArticle("news_article")}
+            onGeneratePressRelease={() => setShowPressReleaseModal(true)}
+          />
+        </>
       )}
 
       {generating && (

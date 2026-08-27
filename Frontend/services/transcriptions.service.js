@@ -24,3 +24,26 @@ export async function transcribe({ file, url }) {
 
   return data;
 }
+
+export async function analyzeInterview(transcriptionId) {
+  const response = await fetch("/api/proxy/transcriptions/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transcription_id: transcriptionId }),
+  });
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const error = new Error(data?.error || "No pudimos analizar la entrevista.");
+    error.status = response.status;
+    throw error;
+  }
+
+  return data;
+}
