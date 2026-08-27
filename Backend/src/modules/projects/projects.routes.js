@@ -1,5 +1,11 @@
 const express = require("express");
-const { listProjectsForUser, createProject, getProjectWithItems, attachItemToProject } = require("./projects.service");
+const {
+  listProjectsForUser,
+  createProject,
+  getProjectWithItems,
+  attachItemToProject,
+  deleteProject,
+} = require("./projects.service");
 
 const router = express.Router();
 
@@ -54,6 +60,15 @@ router.post("/:id/items", async (req, res, next) => {
       itemId: item_id,
     });
     res.json(item);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/:id", async (req, res, next) => {
+  try {
+    await deleteProject({ userId: req.user.id, projectId: req.params.id });
+    res.status(204).send();
   } catch (err) {
     next(err);
   }

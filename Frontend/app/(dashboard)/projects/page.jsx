@@ -39,6 +39,10 @@ export default function ProjectsPage() {
     }
   }
 
+  function handleDeleted(projectId) {
+    setProjects((prev) => prev.filter((project) => project.id !== projectId));
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -69,7 +73,7 @@ export default function ProjectsPage() {
       {!loading && !error && projects.length > 0 && (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCard key={project.id} project={project} onDeleted={handleDeleted} />
           ))}
         </div>
       )}

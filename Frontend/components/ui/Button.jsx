@@ -1,6 +1,7 @@
 const VARIANTS = {
   primary: "bg-brand-blue text-white hover:bg-brand-blue/90",
   secondary: "bg-brand-yellow text-brand-blue hover:bg-brand-yellow/90",
+  danger: "bg-brand-error text-white hover:bg-brand-error/90",
 };
 
 export default function Button({ children, variant = "primary", className = "", ...props }) {

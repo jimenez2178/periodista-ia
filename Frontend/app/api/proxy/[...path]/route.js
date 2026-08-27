@@ -94,3 +94,8 @@ export async function PATCH(request, { params }) {
   const { path } = await params;
   return forward(request, path);
 }
+
+export async function DELETE(request, { params }) {
+  const { path } = await params;
+  return forward(request, path);
+}

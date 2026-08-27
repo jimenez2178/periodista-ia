@@ -179,4 +179,33 @@ async function attachItemToProject({ userId, projectId, type, itemId }) {
   return data;
 }
 
-module.exports = { listProjectsForUser, createProject, getProjectWithItems, attachItemToProject };
+async function deleteProject({ userId, projectId }) {
+  const { data: project, error: projectError } = await supabaseAdmin
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("user_id", userId)
+    .single();
+
+  if (projectError || !project) throw new Error("Proyecto no encontrado.");
+
+  // Los elementos guardados (notas, verificaciones, transcripciones, ideas) no se
+  // borran: solo se desvinculan del proyecto y siguen visibles en el historial.
+  await Promise.all([
+    ...Object.values(ITEM_TABLES).map((table) =>
+      supabaseAdmin.from(table).update({ project_id: null }).eq("project_id", projectId)
+    ),
+    supabaseAdmin.from("sessions").update({ project_id: null }).eq("project_id", projectId),
+  ]);
+
+  const { error } = await supabaseAdmin.from("projects").delete().eq("id", projectId);
+  if (error) throw error;
+}
+
+module.exports = {
+  listProjectsForUser,
+  createProject,
+  getProjectWithItems,
+  attachItemToProject,
+  deleteProject,
+};
