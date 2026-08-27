@@ -13,9 +13,10 @@ export default function AssistantButton() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Abrir asistente"
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-blue text-brand-yellow shadow-lg transition-colors hover:bg-brand-blue/90"
+        className="fixed bottom-6 right-6 z-40 flex flex-col items-center gap-1 rounded-2xl bg-brand-blue px-3 py-2 text-brand-yellow shadow-lg transition-colors hover:bg-brand-blue/90"
       >
         <MessageCircle size={26} />
+        <span className="text-xs font-medium">Asistente</span>
       </button>
       <AssistantModal open={open} onClose={() => setOpen(false)} />
     </>

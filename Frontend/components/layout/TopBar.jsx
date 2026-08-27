@@ -3,11 +3,13 @@
 import Image from "next/image";
 import { Menu } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
+import { useCredits } from "../../hooks/useCredits";
 import { getGreeting, getInitials } from "../../utils/formatters";
 import CreditsBadge from "../credits/CreditsBadge";
 
 export default function TopBar({ onMenuClick }) {
   const { user } = useAuth();
+  const { credits } = useCredits();
   const firstName = (user?.full_name || user?.email || "").split(" ")[0];
 
   return (
@@ -28,12 +30,12 @@ export default function TopBar({ onMenuClick }) {
 
       <div className="flex items-center gap-3 md:gap-4">
         <CreditsBadge />
-        {user?.plan === "free" && (
+        {credits?.plan === "free" && (
           <a
             href="https://www.paypal.com/ncp/payment/7SU7K8LUPGFXN"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-9 items-center rounded-brand bg-brand-yellow px-3 text-sm font-bold text-brand-blue transition-colors hover:bg-brand-yellow/90"
+            className="animate-glow flex h-9 items-center rounded-brand bg-brand-yellow px-3 text-sm font-bold text-brand-blue transition-colors hover:bg-brand-yellow/90"
           >
             <span className="sm:hidden">⚡ Pro</span>
             <span className="hidden sm:inline">⚡ Ir a Pro</span>

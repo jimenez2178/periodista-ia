@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, FolderKanban, History, FileText, User, X } from "lucide-react";
+import { Home, FolderKanban, History, FileText, User, X, LogOut } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { getInitials } from "../../utils/formatters";
 
@@ -17,7 +17,7 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ open, onClose }) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <>
@@ -49,26 +49,6 @@ export default function Sidebar({ open, onClose }) {
           </button>
         </div>
 
-        <div className="flex items-center gap-3 border-b border-white/10 px-6 py-4 md:hidden">
-          {user?.avatar_url ? (
-            <Image
-              src={user.avatar_url}
-              alt={user.full_name || user.email}
-              width={40}
-              height={40}
-              className="rounded-full object-cover"
-            />
-          ) : (
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-yellow text-sm font-bold text-brand-blue">
-              {getInitials(user?.full_name || user?.email)}
-            </span>
-          )}
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-medium">{user?.full_name || user?.email}</span>
-            {user?.email && <span className="truncate text-xs text-white/60">{user.email}</span>}
-          </div>
-        </div>
-
         <nav className="flex flex-1 flex-col gap-1 px-3">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
@@ -88,21 +68,31 @@ export default function Sidebar({ open, onClose }) {
           })}
         </nav>
 
-        <div className="hidden items-center gap-3 border-t border-white/10 px-6 py-4 md:flex">
-          {user?.avatar_url ? (
-            <Image
-              src={user.avatar_url}
-              alt={user.full_name || user.email}
-              width={32}
-              height={32}
-              className="rounded-full object-cover"
-            />
-          ) : (
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-yellow text-sm font-bold text-brand-blue">
-              {getInitials(user?.full_name || user?.email)}
-            </span>
-          )}
-          <span className="truncate text-sm font-medium">{user?.full_name || user?.email}</span>
+        <div className="flex flex-col border-t border-white/10 px-6 py-4">
+          <div className="flex items-center gap-3">
+            {user?.avatar_url ? (
+              <Image
+                src={user.avatar_url}
+                alt={user.full_name || user.email}
+                width={32}
+                height={32}
+                className="rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-yellow text-sm font-bold text-brand-blue">
+                {getInitials(user?.full_name || user?.email)}
+              </span>
+            )}
+            <span className="truncate text-sm font-medium">{user?.full_name || user?.email}</span>
+          </div>
+          <button
+            type="button"
+            onClick={logout}
+            className="mt-3 flex items-center gap-3 rounded-brand px-3 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-red-500/10 hover:text-red-300"
+          >
+            <LogOut size={18} />
+            Cerrar sesión
+          </button>
         </div>
       </aside>
     </>
