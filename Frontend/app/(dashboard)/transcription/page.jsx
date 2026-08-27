@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import AudioUploader from "../../../components/transcription/AudioUploader";
 import TranscriptionResult from "../../../components/transcription/TranscriptionResult";
 import ArticleResult from "../../../components/transcription/ArticleResult";
@@ -8,13 +9,22 @@ import PressReleaseForm from "../../../components/transcription/PressReleaseForm
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
+import Button from "../../../components/ui/Button";
+import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import { transcribe } from "../../../services/transcriptions.service";
 import { generateArticle } from "../../../services/articles.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
+import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
+
+function firstSentence(text) {
+  const sentence = (text || "").split(/(?<=[.!?])\s+/)[0];
+  return sentence || text || "";
+}
 
 export default function TranscriptionPage() {
+  const router = useRouter();
   const { credits, refreshCredits } = useCredits();
 
   const [transcribing, setTranscribing] = useState(false);
@@ -31,6 +41,16 @@ export default function TranscriptionPage() {
   async function handleSaveToProject(projectId) {
     await addItemToProject({ projectId, type: "article", itemId: article.id });
     setToastMessage("Guardado en el proyecto.");
+  }
+
+  function handleVerifyClaim() {
+    setPrefilledInput("verification", firstSentence(article.body));
+    router.push("/verification");
+  }
+
+  function handleInvestigateFurther() {
+    setPrefilledInput("idea", article.title);
+    router.push("/idea");
   }
 
   async function handleTranscribe(input) {
@@ -125,12 +145,24 @@ export default function TranscriptionPage() {
       )}
 
       {article && !generating && (
-        <ArticleResult
-          article={article}
-          onArticleChange={setArticle}
-          onSaveToProject={() => setShowSaveModal(true)}
-          onReset={handleReset}
-        />
+        <>
+          <ArticleResult article={article} onArticleChange={setArticle} />
+          <NextStepsPanel
+            actions={[
+              { emoji: "🔍", label: "Verificar afirmaciones de la nota", onClick: handleVerifyClaim },
+              { emoji: "💡", label: "Investigar más esta historia", onClick: handleInvestigateFurther },
+              { emoji: "💾", label: "Guardar en proyecto", onClick: () => setShowSaveModal(true) },
+            ]}
+          />
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
+              Nueva transcripción
+            </Button>
+            <Button onClick={() => setShowSaveModal(true)} className="w-full sm:w-auto">
+              Guardar en proyecto →
+            </Button>
+          </div>
+        </>
       )}
 
       <PressReleaseForm

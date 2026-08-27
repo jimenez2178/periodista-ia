@@ -37,14 +37,20 @@ export default function ArticleResult({ article, onArticleChange, onSaveToProjec
         </Button>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-brand-border pt-4 sm:flex-row">
-        <Button variant="secondary" onClick={onReset} className="w-full sm:w-auto">
-          Nueva transcripción
-        </Button>
-        <Button onClick={onSaveToProject} className="w-full sm:w-auto">
-          Guardar en proyecto →
-        </Button>
-      </div>
+      {(onReset || onSaveToProject) && (
+        <div className="flex flex-col gap-3 border-t border-brand-border pt-4 sm:flex-row">
+          {onReset && (
+            <Button variant="secondary" onClick={onReset} className="w-full sm:w-auto">
+              Nueva transcripción
+            </Button>
+          )}
+          {onSaveToProject && (
+            <Button onClick={onSaveToProject} className="w-full sm:w-auto">
+              Guardar en proyecto →
+            </Button>
+          )}
+        </div>
+      )}
     </Card>
   );
 }

@@ -1,18 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import ClaimInput from "../../../components/verification/ClaimInput";
 import VerificationResult from "../../../components/verification/VerificationResult";
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
 import Button from "../../../components/ui/Button";
+import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import { verifyClaim } from "../../../services/sources.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
+import { usePrefilledInput, setPrefilledInput } from "../../../hooks/usePrefilledInput";
 
 export default function VerificationPage() {
+  const router = useRouter();
   const [claim, setClaim] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -21,10 +25,20 @@ export default function VerificationPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
   const { refreshCredits } = useCredits();
+  const prefilledClaim = usePrefilledInput("verification");
+
+  useEffect(() => {
+    if (prefilledClaim) setClaim(prefilledClaim);
+  }, [prefilledClaim]);
 
   async function handleSaveToProject(projectId) {
     await addItemToProject({ projectId, type: "source", itemId: result.id });
     setToastMessage("Guardado en el proyecto.");
+  }
+
+  function handleInvestigateFurther() {
+    setPrefilledInput("idea", claim);
+    router.push("/idea");
   }
 
   async function handleVerify() {
@@ -76,6 +90,13 @@ export default function VerificationPage() {
       {result && !loading && (
         <>
           <VerificationResult result={result} />
+          <NextStepsPanel
+            actions={[
+              { emoji: "💡", label: "Investigar más esta historia", onClick: handleInvestigateFurther },
+              { emoji: "📄", label: "Analizar un documento relacionado", onClick: () => router.push("/documents") },
+              { emoji: "💾", label: "Guardar en proyecto", onClick: () => setShowSaveModal(true) },
+            ]}
+          />
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
               Nueva verificación

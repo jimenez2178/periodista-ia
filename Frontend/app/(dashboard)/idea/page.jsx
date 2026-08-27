@@ -1,18 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import IdeaInput from "../../../components/idea/IdeaInput";
 import InvestigationPlan from "../../../components/idea/InvestigationPlan";
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
 import Button from "../../../components/ui/Button";
+import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import { generateInvestigationPlan } from "../../../services/ideas.service";
 import { saveIdeaSession } from "../../../services/sessions.service";
 import { useCredits } from "../../../hooks/useCredits";
+import { usePrefilledInput, setPrefilledInput } from "../../../hooks/usePrefilledInput";
 
 export default function IdeaPage() {
+  const router = useRouter();
   const [idea, setIdea] = useState("");
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -21,10 +25,20 @@ export default function IdeaPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
   const { refreshCredits } = useCredits();
+  const prefilledIdea = usePrefilledInput("idea");
+
+  useEffect(() => {
+    if (prefilledIdea) setIdea(prefilledIdea);
+  }, [prefilledIdea]);
 
   async function handleSaveToProject(projectId) {
     await saveIdeaSession({ idea: idea.trim(), plan, projectId });
     setToastMessage("Guardado en el proyecto.");
+  }
+
+  function handleVerifyClaim() {
+    setPrefilledInput("verification", idea);
+    router.push("/verification");
   }
 
   async function handleGenerate() {
@@ -78,6 +92,13 @@ export default function IdeaPage() {
       {plan && !loading && (
         <>
           <InvestigationPlan plan={plan} />
+          <NextStepsPanel
+            actions={[
+              { emoji: "🔍", label: "Verificar una afirmación", onClick: handleVerifyClaim },
+              { emoji: "📄", label: "Analizar un documento", onClick: () => router.push("/documents") },
+              { emoji: "💾", label: "Guardar en proyecto", onClick: () => setShowSaveModal(true) },
+            ]}
+          />
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
               Nueva idea

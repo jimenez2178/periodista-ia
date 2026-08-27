@@ -1,17 +1,39 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import DocumentUploader from "../../../components/documents/DocumentUploader";
 import DocumentResults from "../../../components/documents/DocumentResults";
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
+import Button from "../../../components/ui/Button";
+import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import { analyzeDocument } from "../../../services/documents.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
+import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
+
+const FALLBACK_LIST_SLUGS = ["budget_and_finances", "people_and_institutions", "dates_and_timeline", "contradictions"];
+
+function pickPrefillText(results) {
+  if (results.key_data_points?.[0]) return results.key_data_points[0];
+
+  for (const slug of FALLBACK_LIST_SLUGS) {
+    if (results[slug]?.[0]) return results[slug][0];
+  }
+
+  if (results.executive_summary) {
+    const firstSentence = results.executive_summary.split(/(?<=[.!?])\s+/)[0];
+    return firstSentence || results.executive_summary;
+  }
+
+  return "";
+}
 
 export default function DocumentsPage() {
+  const router = useRouter();
   const { credits, refreshCredits } = useCredits();
 
   const [loading, setLoading] = useState(false);
@@ -50,6 +72,16 @@ export default function DocumentsPage() {
     setToastMessage("Guardado en el proyecto.");
   }
 
+  function handleVerifyClaim() {
+    setPrefilledInput("verification", pickPrefillText(result.results));
+    router.push("/verification");
+  }
+
+  function handleTurnIntoIdea() {
+    setPrefilledInput("idea", result.results.executive_summary || pickPrefillText(result.results));
+    router.push("/idea");
+  }
+
   function handleReset() {
     setResult(null);
     setError("");
@@ -80,12 +112,24 @@ export default function DocumentsPage() {
       )}
 
       {result && !loading && (
-        <DocumentResults
-          analysisTypes={result.analysis_types}
-          results={result.results}
-          onReset={handleReset}
-          onSaveToProject={() => setShowSaveModal(true)}
-        />
+        <>
+          <DocumentResults analysisTypes={result.analysis_types} results={result.results} />
+          <NextStepsPanel
+            actions={[
+              { emoji: "🔍", label: "Verificar una afirmación del documento", onClick: handleVerifyClaim },
+              { emoji: "💡", label: "Convertir en plan de investigación", onClick: handleTurnIntoIdea },
+              { emoji: "💾", label: "Guardar en proyecto", onClick: () => setShowSaveModal(true) },
+            ]}
+          />
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
+              Nuevo análisis
+            </Button>
+            <Button onClick={() => setShowSaveModal(true)} className="w-full sm:w-auto">
+              Guardar en proyecto →
+            </Button>
+          </div>
+        </>
       )}
 
       <SaveToProjectModal
