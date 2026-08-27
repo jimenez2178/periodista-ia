@@ -14,9 +14,12 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
+    "mammoth": "^1.12.1",
     "multer": "^2.2.0",
     "music-metadata": "^11.15.0",
     "openai": "^7.5.0",
+    "pdf-parse": "^2.4.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.0.0"
   }
 }

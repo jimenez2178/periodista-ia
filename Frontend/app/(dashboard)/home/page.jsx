@@ -21,12 +21,18 @@ const FEATURES = [
     title: "Verificar fuentes",
     description: "Confirma si una afirmación tiene respaldo real",
   },
+  {
+    href: "/documents",
+    emoji: "📄",
+    title: "Analizar documento",
+    description: "Sube un PDF, Word o Excel y obtén hallazgos periodísticos clave",
+  },
 ];
 
 export default function HomePage() {
   return (
     <div className="flex flex-col gap-8">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {FEATURES.map((feature) => (
           <Card key={feature.href} variant="elevated" className="flex flex-col gap-3">
             <span className="text-3xl">{feature.emoji}</span>

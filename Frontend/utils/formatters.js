@@ -16,6 +16,7 @@ const ITEM_TYPE_META = {
   transcription: { emoji: "🎙️", label: "Transcripción" },
   source: { emoji: "🔍", label: "Verificación" },
   idea: { emoji: "💡", label: "Idea" },
+  document: { emoji: "📄", label: "Documento" },
 };
 
 export function getItemTypeMeta(type) {

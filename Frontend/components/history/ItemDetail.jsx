@@ -1,5 +1,6 @@
 import InvestigationPlan from "../idea/InvestigationPlan";
 import VerificationResult from "../verification/VerificationResult";
+import DocumentResults from "../documents/DocumentResults";
 import Button from "../ui/Button";
 import { downloadAsPdf, downloadAsWord } from "../../services/downloads.service";
 
@@ -37,6 +38,10 @@ export default function ItemDetail({ item }) {
         </div>
       </div>
     );
+  }
+
+  if (type === "document") {
+    return <DocumentResults analysisTypes={detail.analysis_types} results={detail.results} />;
   }
 
   if (type === "transcription") {

@@ -19,8 +19,13 @@ function summarizePlan(plan) {
   return truncate(plan?.angle_suggestions?.[0]) || "Plan de investigación guardado.";
 }
 
+function summarizeDocument(analysisTypes) {
+  const count = (analysisTypes || []).length;
+  return count === 1 ? "1 tipo de análisis" : `${count} tipos de análisis`;
+}
+
 async function listHistoryForUser(userId) {
-  const [articlesRes, sourcesRes, transcriptionsRes, sessionsRes] = await Promise.all([
+  const [articlesRes, sourcesRes, transcriptionsRes, sessionsRes, documentsRes] = await Promise.all([
     supabaseAdmin
       .from("articles")
       .select("id, title, body, project_id, created_at")
@@ -38,12 +43,17 @@ async function listHistoryForUser(userId) {
       .select("id, title, project_id, created_at, messages(role, content)")
       .eq("user_id", userId)
       .eq("function_used", "idea"),
+    supabaseAdmin
+      .from("documents")
+      .select("id, file_name, file_type, analysis_types, results, project_id, created_at")
+      .eq("user_id", userId),
   ]);
 
   if (articlesRes.error) throw articlesRes.error;
   if (sourcesRes.error) throw sourcesRes.error;
   if (transcriptionsRes.error) throw transcriptionsRes.error;
   if (sessionsRes.error) throw sessionsRes.error;
+  if (documentsRes.error) throw documentsRes.error;
 
   const items = [
     ...articlesRes.data.map((a) => ({
@@ -92,6 +102,20 @@ async function listHistoryForUser(userId) {
         detail: { idea: idea || s.title, plan },
       };
     }),
+    ...documentsRes.data.map((d) => ({
+      id: d.id,
+      type: "document",
+      title: d.file_name,
+      subtitle: summarizeDocument(d.analysis_types),
+      project_id: d.project_id,
+      created_at: d.created_at,
+      detail: {
+        file_name: d.file_name,
+        file_type: d.file_type,
+        analysis_types: d.analysis_types,
+        results: d.results,
+      },
+    })),
   ];
 
   items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));

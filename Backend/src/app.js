@@ -14,6 +14,7 @@ const assistantRoutes = require("./modules/assistant/assistant.routes");
 const projectsRoutes = require("./modules/projects/projects.routes");
 const sessionsRoutes = require("./modules/sessions/sessions.routes");
 const historyRoutes = require("./modules/history/history.routes");
+const documentsRoutes = require("./modules/documents/documents.routes");
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use("/api/assistant", requireAuth, assistantRoutes);
 app.use("/api/projects", requireAuth, projectsRoutes);
 app.use("/api/sessions", requireAuth, sessionsRoutes);
 app.use("/api/history", requireAuth, historyRoutes);
+app.use("/api/documents", requireAuth, documentsRoutes);
 
 app.use(errorHandler);
 
