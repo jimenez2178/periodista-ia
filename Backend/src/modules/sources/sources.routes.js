@@ -2,6 +2,7 @@ const express = require("express");
 const { generateVerification, saveSourceVerification } = require("./sources.service");
 const requireCredits = require("../../middleware/credits");
 const { incrementUsedCredits } = require("../credits/credits.service");
+const { getUserProfile } = require("../users/users.service");
 
 const router = express.Router();
 
@@ -19,7 +20,12 @@ router.post("/", requireCredits, async (req, res, next) => {
       return res.status(400).json({ error: `El campo 'claim' no puede superar ${MAX_CLAIM_LENGTH} caracteres.` });
     }
 
-    const result = await generateVerification(claim.trim());
+    const profile = await getUserProfile(req.user.id);
+    const result = await generateVerification({
+      claim: claim.trim(),
+      country: profile.country,
+      languageVariant: profile.language_variant,
+    });
     await incrementUsedCredits(req.credits);
     const saved = await saveSourceVerification({ userId: req.user.id, claim: claim.trim(), result });
 

@@ -32,7 +32,9 @@ async function listHistoryForUser(userId) {
       .eq("user_id", userId),
     supabaseAdmin
       .from("sources")
-      .select("id, claim, verdict, confidence_level, explanation, sources_used, project_id, created_at")
+      .select(
+        "id, claim, verdict, verdict_label, confidence_level, explanation, evidence_found, sources_used, what_to_verify, project_id, created_at"
+      )
       .eq("user_id", userId),
     supabaseAdmin
       .from("transcriptions")
@@ -75,9 +77,12 @@ async function listHistoryForUser(userId) {
       detail: {
         claim: s.claim,
         verdict: s.verdict,
+        verdict_label: s.verdict_label,
         confidence_level: s.confidence_level,
         explanation: s.explanation,
+        evidence_found: s.evidence_found,
         sources_used: s.sources_used || [],
+        what_to_verify: s.what_to_verify,
       },
     })),
     ...transcriptionsRes.data.map((t) => ({

@@ -50,9 +50,12 @@ function normalizeItems({ articles, sources, transcriptions, sessions, documents
       detail: {
         claim: s.claim,
         verdict: s.verdict,
+        verdict_label: s.verdict_label,
         confidence_level: s.confidence_level,
         explanation: s.explanation,
+        evidence_found: s.evidence_found,
         sources_used: s.sources_used || [],
+        what_to_verify: s.what_to_verify,
       },
     })),
     ...transcriptions.map((t) => ({
@@ -154,7 +157,9 @@ async function getProjectWithItems({ projectId, userId }) {
     supabaseAdmin.from("articles").select("id, title, body, created_at").eq("project_id", projectId),
     supabaseAdmin
       .from("sources")
-      .select("id, claim, verdict, confidence_level, explanation, sources_used, created_at")
+      .select(
+        "id, claim, verdict, verdict_label, confidence_level, explanation, evidence_found, sources_used, what_to_verify, created_at"
+      )
       .eq("project_id", projectId),
     supabaseAdmin.from("transcriptions").select("id, transcript_text, created_at").eq("project_id", projectId),
     supabaseAdmin
