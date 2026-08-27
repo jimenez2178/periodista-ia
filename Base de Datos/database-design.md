@@ -179,7 +179,24 @@ sources
 
 Por qué existe: Guarda cada verificación de fuente que hace el copiloto. El periodista puede consultar después qué afirmaciones verificó en cada proyecto.
 
-### 11. `payments` — El historial de pagos
+### 11. `interviews` — Los kits de preparación de entrevistas
+
+```
+interviews
+├── id                    UUID, clave primaria
+├── user_id               UUID, clave foránea → users
+├── session_id            UUID, clave foránea → sessions (opcional)
+├── project_id            UUID, clave foránea → projects (opcional)
+├── interviewee           TEXT (nombre, cargo o contexto de la persona a entrevistar)
+├── topic                 TEXT (tema de la entrevista)
+├── results               JSONB (preguntas básicas, incómodas, de seguimiento,
+│                          temas a evitar y datos a verificar)
+└── created_at            TIMESTAMP
+```
+
+Por qué existe: Guarda cada kit de preguntas que el copiloto prepara antes de una entrevista, para que el periodista pueda consultarlo de nuevo o guardarlo en un proyecto.
+
+### 12. `payments` — El historial de pagos
 
 ```
 payments

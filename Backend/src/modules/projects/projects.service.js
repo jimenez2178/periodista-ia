@@ -5,6 +5,7 @@ const ITEM_TABLES = {
   source: "sources",
   transcription: "transcriptions",
   document: "documents",
+  interview: "interviews",
 };
 
 function truncate(text, length = 160) {
@@ -31,7 +32,7 @@ function summarizeDocument(analysisTypes) {
   return count === 1 ? "1 tipo de análisis" : `${count} tipos de análisis`;
 }
 
-function normalizeItems({ articles, sources, transcriptions, sessions, documents }) {
+function normalizeItems({ articles, sources, transcriptions, sessions, documents, interviews }) {
   const items = [
     ...articles.map((a) => ({
       id: a.id,
@@ -91,6 +92,14 @@ function normalizeItems({ articles, sources, transcriptions, sessions, documents
         results: d.results,
       },
     })),
+    ...interviews.map((i) => ({
+      id: i.id,
+      type: "interview",
+      title: i.interviewee,
+      subtitle: truncate(i.topic),
+      created_at: i.created_at,
+      detail: { interviewee: i.interviewee, topic: i.topic, results: i.results },
+    })),
   ];
 
   items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -108,7 +117,7 @@ async function listProjectsForUser(userId) {
 
   const withCounts = await Promise.all(
     projects.map(async (project) => {
-      const [articles, sources, transcriptions, sessions, documents] = await Promise.all([
+      const [articles, sources, transcriptions, sessions, documents, interviews] = await Promise.all([
         supabaseAdmin.from("articles").select("id", { count: "exact", head: true }).eq("project_id", project.id),
         supabaseAdmin.from("sources").select("id", { count: "exact", head: true }).eq("project_id", project.id),
         supabaseAdmin
@@ -117,6 +126,7 @@ async function listProjectsForUser(userId) {
           .eq("project_id", project.id),
         supabaseAdmin.from("sessions").select("id", { count: "exact", head: true }).eq("project_id", project.id),
         supabaseAdmin.from("documents").select("id", { count: "exact", head: true }).eq("project_id", project.id),
+        supabaseAdmin.from("interviews").select("id", { count: "exact", head: true }).eq("project_id", project.id),
       ]);
 
       const item_count =
@@ -124,7 +134,8 @@ async function listProjectsForUser(userId) {
         (sources.count || 0) +
         (transcriptions.count || 0) +
         (sessions.count || 0) +
-        (documents.count || 0);
+        (documents.count || 0) +
+        (interviews.count || 0);
       return { ...project, item_count };
     })
   );
@@ -153,7 +164,7 @@ async function getProjectWithItems({ projectId, userId }) {
 
   if (projectError || !project) return null;
 
-  const [articlesRes, sourcesRes, transcriptionsRes, sessionsRes, documentsRes] = await Promise.all([
+  const [articlesRes, sourcesRes, transcriptionsRes, sessionsRes, documentsRes, interviewsRes] = await Promise.all([
     supabaseAdmin.from("articles").select("id, title, body, created_at").eq("project_id", projectId),
     supabaseAdmin
       .from("sources")
@@ -171,6 +182,7 @@ async function getProjectWithItems({ projectId, userId }) {
       .from("documents")
       .select("id, file_name, file_type, analysis_types, results, created_at")
       .eq("project_id", projectId),
+    supabaseAdmin.from("interviews").select("id, interviewee, topic, results, created_at").eq("project_id", projectId),
   ]);
 
   if (articlesRes.error) throw articlesRes.error;
@@ -178,6 +190,7 @@ async function getProjectWithItems({ projectId, userId }) {
   if (transcriptionsRes.error) throw transcriptionsRes.error;
   if (sessionsRes.error) throw sessionsRes.error;
   if (documentsRes.error) throw documentsRes.error;
+  if (interviewsRes.error) throw interviewsRes.error;
 
   const items = normalizeItems({
     articles: articlesRes.data,
@@ -185,6 +198,7 @@ async function getProjectWithItems({ projectId, userId }) {
     transcriptions: transcriptionsRes.data,
     sessions: sessionsRes.data,
     documents: documentsRes.data,
+    interviews: interviewsRes.data,
   });
 
   return { ...project, items };

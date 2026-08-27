@@ -13,6 +13,7 @@ import Toast from "../../../components/ui/Toast";
 import Button from "../../../components/ui/Button";
 import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
+import SocialSharePanel from "../../../components/social/SocialSharePanel";
 import { transcribe, analyzeInterview } from "../../../services/transcriptions.service";
 import { generateArticle } from "../../../services/articles.service";
 import { addItemToProject } from "../../../services/projects.service";
@@ -173,6 +174,7 @@ export default function TranscriptionPage() {
       {article && !generating && (
         <>
           <ArticleResult article={article} onArticleChange={setArticle} />
+          <SocialSharePanel content={article.body} contentType="article" />
           <NextStepsPanel
             actions={[
               { emoji: "🔍", label: "Verificar afirmaciones de la nota", onClick: handleVerifyClaim },

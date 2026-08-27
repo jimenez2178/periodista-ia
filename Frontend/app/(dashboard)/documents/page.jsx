@@ -10,12 +10,23 @@ import Toast from "../../../components/ui/Toast";
 import Button from "../../../components/ui/Button";
 import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
+import SocialSharePanel from "../../../components/social/SocialSharePanel";
 import { analyzeDocument } from "../../../services/documents.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
 
 const FALLBACK_LIST_SLUGS = ["budget_and_finances", "people_and_institutions", "dates_and_timeline", "contradictions"];
+
+function buildDocumentContentText(analysisTypes, results) {
+  return (analysisTypes || [])
+    .map((slug) => {
+      const value = results[slug];
+      const text = Array.isArray(value) ? value.map((item) => JSON.stringify(item)).join("\n") : value;
+      return `${slug}:\n${text}`;
+    })
+    .join("\n\n");
+}
 
 function pickPrefillText(results) {
   if (results.key_data_points?.[0]) return results.key_data_points[0];
@@ -114,6 +125,10 @@ export default function DocumentsPage() {
       {result && !loading && (
         <>
           <DocumentResults analysisTypes={result.analysis_types} results={result.results} />
+          <SocialSharePanel
+            content={buildDocumentContentText(result.analysis_types, result.results)}
+            contentType="document_analysis"
+          />
           <NextStepsPanel
             actions={[
               { emoji: "🔍", label: "Verificar una afirmación del documento", onClick: handleVerifyClaim },

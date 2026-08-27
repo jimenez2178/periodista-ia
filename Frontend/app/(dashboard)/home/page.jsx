@@ -27,12 +27,24 @@ const FEATURES = [
     title: "Analizar documento",
     description: "Sube un PDF, Word o Excel y obtén hallazgos periodísticos clave",
   },
+  {
+    href: "/interview",
+    emoji: "🎙️",
+    title: "Preparar entrevista",
+    description: "Recibe un kit completo de preguntas antes de tu próxima entrevista",
+  },
+  {
+    href: "/tools",
+    emoji: "🧭",
+    title: "¿Qué herramienta necesito?",
+    description: "Describe tu tarea y recibe una recomendación de flujo de trabajo",
+  },
 ];
 
 export default function HomePage() {
   return (
     <div className="flex flex-col gap-8">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map((feature) => (
           <Card key={feature.href} variant="elevated" className="flex flex-col gap-3">
             <span className="text-3xl">{feature.emoji}</span>

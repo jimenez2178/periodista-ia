@@ -100,6 +100,17 @@ Table articles {
   updated_at timestamp
 }
 
+Table interviews {
+  id uuid [pk]
+  user_id uuid
+  session_id uuid
+  project_id uuid
+  interviewee text
+  topic text
+  results jsonb
+  created_at timestamp
+}
+
 Table downloads {
   id uuid [pk]
   user_id uuid
@@ -147,6 +158,9 @@ Ref: articles.user_id > users.id
 Ref: articles.session_id > sessions.id
 Ref: articles.project_id > projects.id
 Ref: articles.transcription_id > transcriptions.id
+Ref: interviews.user_id > users.id
+Ref: interviews.session_id > sessions.id
+Ref: interviews.project_id > projects.id
 Ref: downloads.user_id > users.id
 Ref: downloads.article_id > articles.id
 Ref: sources.user_id > users.id

@@ -15,6 +15,9 @@ const projectsRoutes = require("./modules/projects/projects.routes");
 const sessionsRoutes = require("./modules/sessions/sessions.routes");
 const historyRoutes = require("./modules/history/history.routes");
 const documentsRoutes = require("./modules/documents/documents.routes");
+const interviewsRoutes = require("./modules/interviews/interviews.routes");
+const toolsRoutes = require("./modules/tools/tools.routes");
+const socialRoutes = require("./modules/social/social.routes");
 
 const app = express();
 
@@ -33,6 +36,9 @@ app.use("/api/projects", requireAuth, projectsRoutes);
 app.use("/api/sessions", requireAuth, sessionsRoutes);
 app.use("/api/history", requireAuth, historyRoutes);
 app.use("/api/documents", requireAuth, documentsRoutes);
+app.use("/api/interviews", requireAuth, interviewsRoutes);
+app.use("/api/tools", requireAuth, toolsRoutes);
+app.use("/api/social", requireAuth, socialRoutes);
 
 app.use(errorHandler);
 

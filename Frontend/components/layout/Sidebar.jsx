@@ -3,13 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, FolderKanban, History, FileText, User, X, LogOut } from "lucide-react";
+import { Home, FolderKanban, History, FileText, User, X, LogOut, Mic, Compass } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { getInitials } from "../../utils/formatters";
 
 const NAV_ITEMS = [
   { href: "/home", label: "Inicio", icon: Home },
   { href: "/documents", label: "Documentos", icon: FileText },
+  { href: "/interview", label: "Preparar entrevista", icon: Mic },
+  { href: "/tools", label: "¿Qué herramienta necesito?", icon: Compass },
   { href: "/projects", label: "Proyectos", icon: FolderKanban },
   { href: "/history", label: "Historial", icon: History },
   { href: "/profile", label: "Perfil", icon: User },

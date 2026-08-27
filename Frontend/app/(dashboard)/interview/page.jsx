@@ -1,54 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import IdeaInput from "../../../components/idea/IdeaInput";
-import InvestigationPlan from "../../../components/idea/InvestigationPlan";
+import InterviewForm from "../../../components/interview/InterviewForm";
+import InterviewResults from "../../../components/interview/InterviewResults";
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
 import Button from "../../../components/ui/Button";
 import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
-import { generateInvestigationPlan } from "../../../services/ideas.service";
-import { saveIdeaSession } from "../../../services/sessions.service";
+import { createInterviewKit } from "../../../services/interview.service";
+import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
-import { usePrefilledInput, setPrefilledInput } from "../../../hooks/usePrefilledInput";
 
-export default function IdeaPage() {
+export default function InterviewPage() {
   const router = useRouter();
-  const [idea, setIdea] = useState("");
-  const [plan, setPlan] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { refreshCredits } = useCredits();
+
+  const [interviewee, setInterviewee] = useState("");
+  const [topic, setTopic] = useState("");
+  const [preparing, setPreparing] = useState(false);
+  const [interview, setInterview] = useState(null);
   const [error, setError] = useState("");
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
-  const { refreshCredits } = useCredits();
-  const prefilledIdea = usePrefilledInput("idea");
-
-  useEffect(() => {
-    if (prefilledIdea) setIdea(prefilledIdea);
-  }, [prefilledIdea]);
 
   async function handleSaveToProject(projectId) {
-    await saveIdeaSession({ idea: idea.trim(), plan, projectId });
+    await addItemToProject({ projectId, type: "interview", itemId: interview.id });
     setToastMessage("Guardado en el proyecto.");
   }
 
-  function handleVerifyClaim() {
-    setPrefilledInput("verification", idea);
-    router.push("/verification");
-  }
-
-  async function handleGenerate() {
-    setLoading(true);
+  async function handlePrepare() {
+    setPreparing(true);
     setError("");
     setNeedsUpgrade(false);
 
     try {
-      const result = await generateInvestigationPlan(idea.trim());
-      setPlan(result);
+      const data = await createInterviewKit({ interviewee: interviewee.trim(), topic: topic.trim() });
+      setInterview(data);
       refreshCredits();
     } catch (err) {
       if (err.status === 402) {
@@ -57,13 +48,14 @@ export default function IdeaPage() {
         setError(err.message);
       }
     } finally {
-      setLoading(false);
+      setPreparing(false);
     }
   }
 
   function handleReset() {
-    setIdea("");
-    setPlan(null);
+    setInterviewee("");
+    setTopic("");
+    setInterview(null);
     setError("");
     setNeedsUpgrade(false);
   }
@@ -71,38 +63,46 @@ export default function IdeaPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-brand-text">💡 Tengo una idea</h1>
+        <h1 className="text-2xl font-bold text-brand-text">🎙️ Preparar entrevista</h1>
         <p className="mt-1 text-sm text-brand-text/70">
-          Convierte una observación en un plan de investigación completo.
+          Recibe un kit completo de preguntas antes de tu próxima entrevista.
         </p>
       </div>
 
-      <IdeaInput value={idea} onChange={setIdea} onSubmit={handleGenerate} disabled={loading || !!plan} />
+      {!interview && (
+        <InterviewForm
+          interviewee={interviewee}
+          topic={topic}
+          onIntervieweeChange={setInterviewee}
+          onTopicChange={setTopic}
+          onSubmit={handlePrepare}
+          disabled={preparing}
+        />
+      )}
 
       {error && <p className="text-sm text-brand-error">{error}</p>}
       {needsUpgrade && <UpgradePrompt />}
 
-      {loading && (
+      {preparing && (
         <div className="flex items-center justify-center gap-3 py-8">
           <Spinner />
-          <span className="text-brand-text/70">Generando tu plan...</span>
+          <span className="text-brand-text/70">Preparando tus preguntas...</span>
         </div>
       )}
 
-      {plan && !loading && (
+      {interview && !preparing && (
         <>
-          <InvestigationPlan plan={plan} />
+          <InterviewResults results={interview.results} />
           <NextStepsPanel
             actions={[
-              { emoji: "🔍", label: "Verificar una afirmación", onClick: handleVerifyClaim },
-              { emoji: "📄", label: "Analizar un documento", onClick: () => router.push("/documents") },
-              { emoji: "🎙️", label: "Preparar entrevista", onClick: () => router.push("/interview") },
+              { emoji: "🎙️", label: "Transcribir esta entrevista", onClick: () => router.push("/transcription") },
+              { emoji: "🔍", label: "Verificar información", onClick: () => router.push("/verification") },
               { emoji: "💾", label: "Guardar en proyecto", onClick: () => setShowSaveModal(true) },
             ]}
           />
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
-              Nueva idea
+              Nueva entrevista
             </Button>
             <Button onClick={() => setShowSaveModal(true)} className="w-full sm:w-auto">
               Guardar en proyecto →
