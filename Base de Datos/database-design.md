@@ -206,12 +206,12 @@ payments
 ├── currency              TEXT (ej: "USD")
 ├── plan                  TEXT (pro | newsroom)
 ├── payment_method        TEXT (paypal | stripe | lemonsqueezy)
-├── external_payment_id   TEXT (el ID que da PayPal/Stripe)
+├── external_payment_id   TEXT, único (el txn_id que da PayPal/Stripe)
 ├── status                TEXT (pending | completed | failed | refunded)
 ├── created_at            TIMESTAMP
 ```
 
-Por qué existe: Registra cada pago recibido. Cuando PayPal confirma un pago, esta tabla se actualiza y se activa el plan Pro del periodista.
+Por qué existe: Registra cada pago recibido. Cuando el webhook de PayPal (`POST /api/payments/webhook`) confirma un pago completado, inserta aquí primero y luego activa el plan Pro del periodista (`users.plan`, `credits`). El `unique` en `external_payment_id` no es solo para no duplicar el registro contable: es lo que hace idempotente al webhook — si PayPal reenvía el mismo IPN (algo que hace si no recibe el 200 a tiempo), el insert falla por duplicado y el resto del proceso (email de bienvenida, notificación de Telegram) se salta en vez de repetirse.
 
 ## Relaciones entre tablas (resumen visual)
 

@@ -46,6 +46,18 @@ async function getCreditsForUser(userId) {
   return data;
 }
 
+async function upgradeCreditsToPro(userId) {
+  const { data, error } = await supabaseAdmin
+    .from("credits")
+    .update({ plan: "pro", total_credits: 999, used_credits: 0 })
+    .eq("user_id", userId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 async function incrementUsedCredits(creditsRow) {
   const { data, error } = await supabaseAdmin
     .from("credits")
@@ -62,5 +74,6 @@ module.exports = {
   initializeFreeCredits,
   getCreditsForUser,
   incrementUsedCredits,
+  upgradeCreditsToPro,
   FREE_PLAN_DAILY_CREDITS,
 };

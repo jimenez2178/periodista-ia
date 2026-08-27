@@ -139,7 +139,7 @@ Table payments {
   currency text
   plan text
   payment_method text
-  external_payment_id text
+  external_payment_id text [unique, not null]
   status text
   created_at timestamp
 }

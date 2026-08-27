@@ -19,6 +19,7 @@
     "music-metadata": "^11.15.0",
     "openai": "^7.5.0",
     "pdf-parse": "^2.4.5",
+    "resend": "^6.24.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.0.0"
   }

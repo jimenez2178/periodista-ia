@@ -17,6 +17,12 @@ async function getUserProfile(id) {
   return data;
 }
 
+async function getUserByEmail(email) {
+  const { data, error } = await supabaseAdmin.from("users").select("*").eq("email", email).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 async function updateUserProfile(id, fields) {
   const { data, error } = await supabaseAdmin.from("users").update(fields).eq("id", id).select().single();
   if (error) throw error;
@@ -37,4 +43,4 @@ async function uploadAvatar(userId, buffer, mimeType) {
   return data.publicUrl;
 }
 
-module.exports = { createUserProfile, getUserProfile, updateUserProfile, uploadAvatar };
+module.exports = { createUserProfile, getUserProfile, getUserByEmail, updateUserProfile, uploadAvatar };

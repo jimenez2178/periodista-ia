@@ -4,4 +4,10 @@ function getNextDailyResetAt(from = new Date()) {
   return next.toISOString();
 }
 
-module.exports = { getNextDailyResetAt };
+function addDays(days, from = new Date()) {
+  const next = new Date(from);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next.toISOString();
+}
+
+module.exports = { getNextDailyResetAt, addDays };
