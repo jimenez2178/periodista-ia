@@ -1,5 +1,6 @@
 import "../styles/globals.css";
 import { AuthProvider } from "../context/AuthContext";
+import ServiceWorkerCleanup from "../components/ServiceWorkerCleanup";
 
 export const metadata = {
   title: "PeriodistaIA",
@@ -10,7 +11,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <ServiceWorkerCleanup />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
