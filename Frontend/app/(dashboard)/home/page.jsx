@@ -45,6 +45,12 @@ const FEATURES = [
     title: "¿Qué herramienta necesito?",
     description: "Describe tu tarea y recibe una recomendación de flujo de trabajo",
   },
+  {
+    href: "/doc-to-note",
+    emoji: "📝",
+    title: "De documento a nota",
+    description: "Sube un documento y conviértelo directo en una nota lista para publicar",
+  },
 ];
 
 export default function HomePage() {
@@ -62,7 +68,7 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {FEATURES.map((feature) => (
           <Card key={feature.href} variant="elevated" className="flex flex-col gap-3">
             <span className="text-3xl">{feature.emoji}</span>

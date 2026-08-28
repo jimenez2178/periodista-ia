@@ -19,6 +19,7 @@ const interviewsRoutes = require("./modules/interviews/interviews.routes");
 const toolsRoutes = require("./modules/tools/tools.routes");
 const socialRoutes = require("./modules/social/social.routes");
 const paymentsRoutes = require("./modules/payments/payments.routes");
+const docToNoteRoutes = require("./modules/doc-to-note/doc-to-note.routes");
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use("/api/interviews", requireAuth, interviewsRoutes);
 app.use("/api/tools", requireAuth, toolsRoutes);
 app.use("/api/social", requireAuth, socialRoutes);
 app.use("/api/payments", paymentsRoutes); // sin requireAuth -- PayPal no manda token
+app.use("/api/doc-to-note", requireAuth, docToNoteRoutes);
 
 app.use(errorHandler);
 

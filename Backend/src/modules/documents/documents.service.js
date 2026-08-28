@@ -127,6 +127,10 @@ async function extractText(buffer, originalname) {
     return { text: buffer.toString("utf8"), pageCount: null, fileType: "csv" };
   }
 
+  if (extension === "txt") {
+    return { text: buffer.toString("utf8"), pageCount: null, fileType: "txt" };
+  }
+
   throw Object.assign(new Error("Formato no compatible. Sube un PDF, Word (.docx), Excel (.xlsx) o CSV."), {
     status: 400,
   });
