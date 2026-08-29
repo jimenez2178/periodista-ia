@@ -5,7 +5,7 @@ const { incrementUsedCredits } = require("../credits/credits.service");
 const { ANALYSIS_TYPE_SLUGS, extractText, generateDocumentAnalysis, saveDocument } = require("./documents.service");
 
 const MAX_DOCUMENT_BYTES = 15 * 1024 * 1024;
-const FREE_PLAN_MAX_BYTES = 50 * 1024;
+const FREE_PLAN_MAX_BYTES = 500 * 1024;
 const FREE_PLAN_MAX_PAGES = 5;
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_DOCUMENT_BYTES } });
@@ -42,7 +42,7 @@ router.post("/", requireCredits, upload.single("document"), async (req, res, nex
     if (req.credits.plan === "free" && isOverFreeLimit) {
       return res.status(402).json({
         error:
-          "El plan gratuito permite documentos de hasta 5 páginas o 50KB. Actualiza tu plan para analizar documentos más grandes.",
+          "El plan gratuito permite documentos de hasta 5 páginas o 500KB. Actualiza tu plan para analizar documentos más grandes.",
         code: "DOCUMENT_TOO_LARGE",
       });
     }

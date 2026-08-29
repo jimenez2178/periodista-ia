@@ -81,7 +81,7 @@ export default function DocumentUploader({ onSubmit, isFree, disabled }) {
 
       {isFree && (
         <p className="rounded-brand bg-brand-yellow/10 px-3 py-2 text-xs text-brand-text/70">
-          Plan gratuito: máximo 5 páginas o 50KB. Actualiza para documentos más grandes →
+          Plan gratuito: máximo 5 páginas o 500KB. Actualiza para documentos más grandes →
         </p>
       )}
 

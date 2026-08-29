@@ -8,7 +8,7 @@ const { saveArticle } = require("../articles/articles.service");
 const { attachItemToProject } = require("../projects/projects.service");
 
 const MAX_DOCUMENT_BYTES = 15 * 1024 * 1024;
-const FREE_PLAN_MAX_BYTES = 50 * 1024;
+const FREE_PLAN_MAX_BYTES = 500 * 1024;
 const FREE_PLAN_MAX_PAGES = 5;
 
 const VALID_FORMATS = ["📰 Nota periodística", "📋 Comunicado de prensa"];
@@ -71,7 +71,7 @@ router.post("/", requireCredits, upload.single("document"), async (req, res, nex
       const isOverFreeLimit = req.file.size > FREE_PLAN_MAX_BYTES || (pageCount != null && pageCount > FREE_PLAN_MAX_PAGES);
       if (req.credits.plan === "free" && isOverFreeLimit) {
         return res.status(402).json({
-          error: "El plan gratuito permite documentos de hasta 5 páginas o 50KB. Actualiza tu plan para documentos más grandes.",
+          error: "El plan gratuito permite documentos de hasta 5 páginas o 500KB. Actualiza tu plan para documentos más grandes.",
           code: "DOCUMENT_TOO_LARGE",
         });
       }
