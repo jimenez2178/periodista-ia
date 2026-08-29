@@ -11,6 +11,7 @@ import SaveToProjectModal from "../../../components/projects/SaveToProjectModal"
 import { generateNoteFromDocument, saveNoteToProject } from "../../../services/doc-to-note.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
+import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
 
 function firstSentence(text) {
   const sentence = (text || "").split(/(?<=[.!?])\s+/)[0];
@@ -28,6 +29,9 @@ export default function DocToNotePage() {
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [savedToProject, setSavedToProject] = useState(false);
+
+  useUnsavedWarning(!!article && !savedToProject, () => setShowSaveModal(true));
 
   async function handleGenerate({ file, text, format, organizationName, tone, length }) {
     setGenerating(true);
@@ -59,6 +63,7 @@ export default function DocToNotePage() {
       organizationName: meta.organizationName,
       projectId,
     });
+    setSavedToProject(true);
     setToastMessage("Guardado en el proyecto.");
   }
 
@@ -70,6 +75,7 @@ export default function DocToNotePage() {
   function handleReset() {
     setArticle(null);
     setMeta(null);
+    setSavedToProject(false);
     setError("");
     setNeedsUpgrade(false);
   }

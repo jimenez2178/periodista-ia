@@ -14,6 +14,7 @@ import { verifyClaim } from "../../../services/sources.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { usePrefilledInput, setPrefilledInput } from "../../../hooks/usePrefilledInput";
+import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
 
 export default function VerificationPage() {
   const router = useRouter();
@@ -24,8 +25,11 @@ export default function VerificationPage() {
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [savedToProject, setSavedToProject] = useState(false);
   const { refreshCredits } = useCredits();
   const prefilledClaim = usePrefilledInput("verification");
+
+  useUnsavedWarning(!!result && !savedToProject, () => setShowSaveModal(true));
 
   useEffect(() => {
     if (prefilledClaim) setClaim(prefilledClaim);
@@ -33,6 +37,7 @@ export default function VerificationPage() {
 
   async function handleSaveToProject(projectId) {
     await addItemToProject({ projectId, type: "source", itemId: result.id });
+    setSavedToProject(true);
     setToastMessage("Guardado en el proyecto.");
   }
 
@@ -64,6 +69,7 @@ export default function VerificationPage() {
   function handleReset() {
     setClaim("");
     setResult(null);
+    setSavedToProject(false);
     setError("");
     setNeedsUpgrade(false);
   }

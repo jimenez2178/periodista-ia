@@ -19,6 +19,7 @@ import { generateArticle } from "../../../services/articles.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
+import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
 
 function firstSentence(text) {
   const sentence = (text || "").split(/(?<=[.!?])\s+/)[0];
@@ -41,9 +42,13 @@ export default function TranscriptionPage() {
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [savedToProject, setSavedToProject] = useState(false);
+
+  useUnsavedWarning(!!article && !savedToProject, () => setShowSaveModal(true));
 
   async function handleSaveToProject(projectId) {
     await addItemToProject({ projectId, type: "article", itemId: article.id });
+    setSavedToProject(true);
     setToastMessage("Guardado en el proyecto.");
   }
 
@@ -119,6 +124,7 @@ export default function TranscriptionPage() {
     setAnalyzing(false);
     setInterviewAnalysis(null);
     setArticle(null);
+    setSavedToProject(false);
     setError("");
     setNeedsUpgrade(false);
   }

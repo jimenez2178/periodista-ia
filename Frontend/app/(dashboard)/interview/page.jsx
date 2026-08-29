@@ -13,6 +13,7 @@ import SaveToProjectModal from "../../../components/projects/SaveToProjectModal"
 import { createInterviewKit } from "../../../services/interview.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
+import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
 
 export default function InterviewPage() {
   const router = useRouter();
@@ -26,9 +27,13 @@ export default function InterviewPage() {
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [savedToProject, setSavedToProject] = useState(false);
+
+  useUnsavedWarning(!!interview && !savedToProject, () => setShowSaveModal(true));
 
   async function handleSaveToProject(projectId) {
     await addItemToProject({ projectId, type: "interview", itemId: interview.id });
+    setSavedToProject(true);
     setToastMessage("Guardado en el proyecto.");
   }
 
@@ -56,6 +61,7 @@ export default function InterviewPage() {
     setInterviewee("");
     setTopic("");
     setInterview(null);
+    setSavedToProject(false);
     setError("");
     setNeedsUpgrade(false);
   }

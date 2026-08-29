@@ -15,6 +15,7 @@ import { analyzeDocument } from "../../../services/documents.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
+import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
 
 const FALLBACK_LIST_SLUGS = ["budget_and_finances", "people_and_institutions", "dates_and_timeline", "contradictions"];
 
@@ -53,6 +54,9 @@ export default function DocumentsPage() {
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [savedToProject, setSavedToProject] = useState(false);
+
+  useUnsavedWarning(!!result && !savedToProject, () => setShowSaveModal(true));
 
   async function handleAnalyze({ file, analysisTypes }) {
     setLoading(true);
@@ -80,6 +84,7 @@ export default function DocumentsPage() {
 
   async function handleSaveToProject(projectId) {
     await addItemToProject({ projectId, type: "document", itemId: result.id });
+    setSavedToProject(true);
     setToastMessage("Guardado en el proyecto.");
   }
 
@@ -95,6 +100,7 @@ export default function DocumentsPage() {
 
   function handleReset() {
     setResult(null);
+    setSavedToProject(false);
     setError("");
     setNeedsUpgrade(false);
   }

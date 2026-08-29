@@ -14,6 +14,7 @@ import { generateInvestigationPlan } from "../../../services/ideas.service";
 import { saveIdeaSession } from "../../../services/sessions.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { usePrefilledInput, setPrefilledInput } from "../../../hooks/usePrefilledInput";
+import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
 
 export default function IdeaPage() {
   const router = useRouter();
@@ -24,8 +25,11 @@ export default function IdeaPage() {
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [savedToProject, setSavedToProject] = useState(false);
   const { refreshCredits } = useCredits();
   const prefilledIdea = usePrefilledInput("idea");
+
+  useUnsavedWarning(!!plan && !savedToProject, () => setShowSaveModal(true));
 
   useEffect(() => {
     if (prefilledIdea) setIdea(prefilledIdea);
@@ -33,6 +37,7 @@ export default function IdeaPage() {
 
   async function handleSaveToProject(projectId) {
     await saveIdeaSession({ idea: idea.trim(), plan, projectId });
+    setSavedToProject(true);
     setToastMessage("Guardado en el proyecto.");
   }
 
@@ -64,6 +69,7 @@ export default function IdeaPage() {
   function handleReset() {
     setIdea("");
     setPlan(null);
+    setSavedToProject(false);
     setError("");
     setNeedsUpgrade(false);
   }

@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Home, FolderKanban, History, FileText, User, X, LogOut, Mic, Compass, FileEdit } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { getInitials } from "../../utils/formatters";
+import { getUnsavedWarningState } from "../../hooks/useUnsavedWarning";
+import UnsavedWarningModal from "../ui/UnsavedWarningModal";
 
 const NAV_ITEMS = [
   { href: "/home", label: "Inicio", icon: Home },
@@ -20,7 +23,38 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ open, onClose }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
+  const [pendingHref, setPendingHref] = useState(null);
+  const [pendingSave, setPendingSave] = useState(null);
+
+  function handleNavClick(e, href) {
+    const { hasUnsavedResults, onRequestSave } = getUnsavedWarningState();
+    if (hasUnsavedResults) {
+      e.preventDefault();
+      setPendingHref(href);
+      setPendingSave(() => onRequestSave);
+      return;
+    }
+    onClose();
+  }
+
+  function handleWarningClose() {
+    setPendingHref(null);
+    setPendingSave(null);
+  }
+
+  function handleWarningSave() {
+    pendingSave?.();
+    handleWarningClose();
+  }
+
+  function handleWarningDiscard() {
+    const href = pendingHref;
+    handleWarningClose();
+    onClose();
+    if (href) router.push(href);
+  }
 
   return (
     <>
@@ -59,7 +93,7 @@ export default function Sidebar({ open, onClose }) {
               <Link
                 key={href}
                 href={href}
-                onClick={onClose}
+                onClick={(e) => handleNavClick(e, href)}
                 className={`flex items-center gap-3 rounded-brand px-3 py-2.5 text-sm font-medium transition-colors ${
                   active ? "bg-brand-yellow text-brand-blue" : "text-white/80 hover:bg-white/10"
                 }`}
@@ -98,6 +132,13 @@ export default function Sidebar({ open, onClose }) {
           </button>
         </div>
       </aside>
+
+      <UnsavedWarningModal
+        open={!!pendingHref}
+        onClose={handleWarningClose}
+        onSave={handleWarningSave}
+        onDiscard={handleWarningDiscard}
+      />
     </>
   );
 }
