@@ -15,7 +15,7 @@ export default function IdeaInput({ value, onChange, onSubmit, disabled }) {
         disabled={disabled}
         maxLength={MAX_LENGTH}
         rows={6}
-        placeholder="Cuéntame tu idea con tus palabras. Puede ser una observación, una sospecha, algo que viste en la calle o una punta de un contacto..."
+        placeholder="Cuéntame tu idea con tus palabras. Puede ser una observación, una sospecha, algo que viste en la calle o una información que alguien te dio..."
         className="rounded-brand border border-brand-border px-4 py-3 text-brand-text outline-none focus:border-brand-blue disabled:bg-brand-bg disabled:text-brand-text/50"
       />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
