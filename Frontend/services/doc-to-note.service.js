@@ -1,15 +1,31 @@
-export async function generateNoteFromDocument({ file, format, organizationName, tone, length }) {
-  const formData = new FormData();
-  formData.append("document", file);
-  formData.append("format", format);
-  if (organizationName) formData.append("organization_name", organizationName);
-  formData.append("tone", tone);
-  formData.append("length", length);
+export async function generateNoteFromDocument({ file, text, format, organizationName, tone, length }) {
+  let response;
 
-  const response = await fetch("/api/proxy/doc-to-note", {
-    method: "POST",
-    body: formData,
-  });
+  if (file) {
+    const formData = new FormData();
+    formData.append("document", file);
+    formData.append("format", format);
+    if (organizationName) formData.append("organization_name", organizationName);
+    formData.append("tone", tone);
+    formData.append("length", length);
+
+    response = await fetch("/api/proxy/doc-to-note", {
+      method: "POST",
+      body: formData,
+    });
+  } else {
+    response = await fetch("/api/proxy/doc-to-note", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text,
+        format,
+        organization_name: organizationName,
+        tone,
+        length,
+      }),
+    });
+  }
 
   let data = null;
   try {

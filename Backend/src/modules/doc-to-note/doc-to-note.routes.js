@@ -14,6 +14,7 @@ const FREE_PLAN_MAX_PAGES = 5;
 const VALID_FORMATS = ["📰 Nota periodística", "📋 Comunicado de prensa"];
 const SUPPORTED_FILE_TYPES = ["pdf", "docx", "txt"];
 const MAX_FIELD_LENGTH = 200;
+const MAX_PASTED_TEXT_LENGTH = 5000;
 
 // La tabla `articles` restringe `type` a estos dos slugs (mismo check constraint
 // que usa el módulo `articles`); el formulario maneja las etiquetas con emoji.
@@ -27,12 +28,15 @@ const router = express.Router();
 
 router.post("/", requireCredits, upload.single("document"), async (req, res, next) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "Debes subir un documento." });
-    }
-
-    const { format, tone, length } = req.body;
+    const { format, tone, length, text: pastedText } = req.body;
     const organizationName = req.body.organization_name;
+
+    if (req.file && pastedText) {
+      return res.status(400).json({ error: "Envía solo un documento o un texto, no ambos." });
+    }
+    if (!req.file && !pastedText) {
+      return res.status(400).json({ error: "Debes subir un documento o pegar un texto." });
+    }
 
     if (!VALID_FORMATS.includes(format)) {
       return res.status(400).json({ error: "Selecciona un formato de salida válido." });
@@ -50,22 +54,35 @@ router.post("/", requireCredits, upload.single("document"), async (req, res, nex
       return res.status(400).json({ error: "Selecciona una extensión válida." });
     }
 
-    const { text, pageCount, fileType } = await extractText(req.file.buffer, req.file.originalname);
+    let text;
 
-    if (!SUPPORTED_FILE_TYPES.includes(fileType)) {
-      return res.status(400).json({ error: "Formato no compatible. Sube un PDF, Word (.docx) o TXT." });
-    }
+    if (req.file) {
+      let pageCount, fileType;
+      ({ text, pageCount, fileType } = await extractText(req.file.buffer, req.file.originalname));
 
-    if (!text || !text.trim()) {
-      return res.status(400).json({ error: "El documento no contiene texto legible." });
-    }
+      if (!SUPPORTED_FILE_TYPES.includes(fileType)) {
+        return res.status(400).json({ error: "Formato no compatible. Sube un PDF, Word (.docx) o TXT." });
+      }
 
-    const isOverFreeLimit = req.file.size > FREE_PLAN_MAX_BYTES || (pageCount != null && pageCount > FREE_PLAN_MAX_PAGES);
-    if (req.credits.plan === "free" && isOverFreeLimit) {
-      return res.status(402).json({
-        error: "El plan gratuito permite documentos de hasta 5 páginas o 50KB. Actualiza tu plan para documentos más grandes.",
-        code: "DOCUMENT_TOO_LARGE",
-      });
+      if (!text || !text.trim()) {
+        return res.status(400).json({ error: "El documento no contiene texto legible." });
+      }
+
+      const isOverFreeLimit = req.file.size > FREE_PLAN_MAX_BYTES || (pageCount != null && pageCount > FREE_PLAN_MAX_PAGES);
+      if (req.credits.plan === "free" && isOverFreeLimit) {
+        return res.status(402).json({
+          error: "El plan gratuito permite documentos de hasta 5 páginas o 50KB. Actualiza tu plan para documentos más grandes.",
+          code: "DOCUMENT_TOO_LARGE",
+        });
+      }
+    } else {
+      if (typeof pastedText !== "string" || !pastedText.trim()) {
+        return res.status(400).json({ error: "El texto no puede estar vacío." });
+      }
+      if (pastedText.length > MAX_PASTED_TEXT_LENGTH) {
+        return res.status(400).json({ error: `El texto no puede superar ${MAX_PASTED_TEXT_LENGTH} caracteres.` });
+      }
+      text = pastedText.trim();
     }
 
     const article = await generateNoteFromDocument({ text, format, tone, length, organizationName });

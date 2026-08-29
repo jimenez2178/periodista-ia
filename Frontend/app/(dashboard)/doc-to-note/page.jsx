@@ -29,13 +29,13 @@ export default function DocToNotePage() {
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
 
-  async function handleGenerate({ file, format, organizationName, tone, length }) {
+  async function handleGenerate({ file, text, format, organizationName, tone, length }) {
     setGenerating(true);
     setError("");
     setNeedsUpgrade(false);
 
     try {
-      const data = await generateNoteFromDocument({ file, format, organizationName, tone, length });
+      const data = await generateNoteFromDocument({ file, text, format, organizationName, tone, length });
       setArticle({ title: data.title, body: data.body });
       setMeta({ format: data.format, organizationName });
       refreshCredits();
