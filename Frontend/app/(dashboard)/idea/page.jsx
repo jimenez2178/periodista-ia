@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import IdeaInput from "../../../components/idea/IdeaInput";
 import InvestigationPlan from "../../../components/idea/InvestigationPlan";
+import IdeaToNoteModal from "../../../components/idea/IdeaToNoteModal";
+import IdeaNoteResult from "../../../components/idea/IdeaNoteResult";
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
@@ -12,6 +14,8 @@ import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import { generateInvestigationPlan } from "../../../services/ideas.service";
 import { saveIdeaSession } from "../../../services/sessions.service";
+import { generateArticle } from "../../../services/articles.service";
+import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { usePrefilledInput, setPrefilledInput } from "../../../hooks/usePrefilledInput";
 import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
@@ -26,17 +30,31 @@ export default function IdeaPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [savedToProject, setSavedToProject] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [noteGenerating, setNoteGenerating] = useState(false);
+  const [note, setNote] = useState(null);
+  const [noteError, setNoteError] = useState("");
+  const [noteNeedsUpgrade, setNoteNeedsUpgrade] = useState(false);
+  const [showNoteSaveModal, setShowNoteSaveModal] = useState(false);
+  const [noteSavedToProject, setNoteSavedToProject] = useState(false);
+
   const { refreshCredits } = useCredits();
   const prefilledIdea = usePrefilledInput("idea");
 
-  useUnsavedWarning(!!plan && !savedToProject, () => setShowSaveModal(true));
+  useUnsavedWarning(
+    (!!plan && !savedToProject) || (!!note && !noteSavedToProject),
+    () => setShowSaveModal(true),
+  );
 
   useEffect(() => {
     if (prefilledIdea) setIdea(prefilledIdea);
   }, [prefilledIdea]);
 
   async function handleSaveToProject(projectId) {
-    await saveIdeaSession({ idea: idea.trim(), plan, projectId });
+    const session = await saveIdeaSession({ idea: idea.trim(), plan, projectId });
+    setSessionId(session.id);
     setSavedToProject(true);
     setToastMessage("Guardado en el proyecto.");
   }
@@ -66,10 +84,48 @@ export default function IdeaPage() {
     }
   }
 
+  async function handleGenerateNote({ type, organizationName }) {
+    setShowNoteModal(false);
+    setNoteGenerating(true);
+    setNoteError("");
+    setNoteNeedsUpgrade(false);
+
+    try {
+      const saved = await generateArticle({
+        idea_text: idea.trim(),
+        plan,
+        session_id: sessionId,
+        type,
+        organization_name: organizationName,
+      });
+      setNote(saved);
+      refreshCredits();
+    } catch (err) {
+      if (err.status === 402) {
+        setNoteNeedsUpgrade(true);
+      } else {
+        setNoteError(err.message);
+      }
+    } finally {
+      setNoteGenerating(false);
+    }
+  }
+
+  async function handleSaveNoteToProject(projectId) {
+    await addItemToProject({ projectId, type: "article", itemId: note.id });
+    setNoteSavedToProject(true);
+    setToastMessage("Guardado en el proyecto.");
+  }
+
   function handleReset() {
     setIdea("");
     setPlan(null);
     setSavedToProject(false);
+    setSessionId(null);
+    setNote(null);
+    setNoteError("");
+    setNoteNeedsUpgrade(false);
+    setNoteSavedToProject(false);
     setError("");
     setNeedsUpgrade(false);
   }
@@ -98,6 +154,31 @@ export default function IdeaPage() {
       {plan && !loading && (
         <>
           <InvestigationPlan plan={plan} />
+
+          <div className="flex justify-end">
+            <Button onClick={() => setShowNoteModal(true)} disabled={noteGenerating}>
+              📰 Generar nota basada en esta investigación
+            </Button>
+          </div>
+
+          {noteError && <p className="text-sm text-brand-error">{noteError}</p>}
+          {noteNeedsUpgrade && <UpgradePrompt />}
+
+          {noteGenerating && (
+            <div className="flex items-center justify-center gap-3 py-8">
+              <Spinner />
+              <span className="text-brand-text/70">Generando tu nota...</span>
+            </div>
+          )}
+
+          {note && !noteGenerating && (
+            <IdeaNoteResult
+              article={note}
+              onArticleChange={setNote}
+              onSaveToProject={() => setShowNoteSaveModal(true)}
+            />
+          )}
+
           <NextStepsPanel
             actions={[
               { emoji: "🔍", label: "Verificar una afirmación", onClick: handleVerifyClaim },
@@ -117,10 +198,23 @@ export default function IdeaPage() {
         </>
       )}
 
+      <IdeaToNoteModal
+        open={showNoteModal}
+        onClose={() => setShowNoteModal(false)}
+        onSubmit={handleGenerateNote}
+        loading={noteGenerating}
+      />
+
       <SaveToProjectModal
         open={showSaveModal}
         onClose={() => setShowSaveModal(false)}
         onConfirm={handleSaveToProject}
+      />
+
+      <SaveToProjectModal
+        open={showNoteSaveModal}
+        onClose={() => setShowNoteSaveModal(false)}
+        onConfirm={handleSaveNoteToProject}
       />
 
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage("")} />}

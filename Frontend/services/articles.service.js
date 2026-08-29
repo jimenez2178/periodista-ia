@@ -1,8 +1,8 @@
-export async function generateArticle({ transcription_id, type, organization_name }) {
+export async function generateArticle(payload) {
   const response = await fetch("/api/proxy/articles", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ transcription_id, type, organization_name }),
+    body: JSON.stringify(payload),
   });
 
   let data = null;
