@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useGuardedAction, useGuardedNavigation } from "../../../context/NavigationGuardContext";
 import InterviewForm from "../../../components/interview/InterviewForm";
 import InterviewResults from "../../../components/interview/InterviewResults";
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
@@ -19,7 +19,8 @@ import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
 const EMPTY_FORM = { interviewee: "", topic: "", goal: "", interviewType: "a_fondo", research: true };
 
 export default function InterviewPage() {
-  const router = useRouter();
+  const navigate = useGuardedNavigation();
+  const guardAction = useGuardedAction();
   const { refreshCredits } = useCredits();
   const prefilledInterviewee = usePrefilledInput("interview");
 
@@ -32,7 +33,7 @@ export default function InterviewPage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [savedToProject, setSavedToProject] = useState(false);
 
-  useUnsavedWarning(!!interview && !savedToProject, () => setShowSaveModal(true));
+  useUnsavedWarning(!!interview && !savedToProject, handleSaveToProject);
 
   useEffect(() => {
     if (prefilledInterviewee) setForm((current) => ({ ...current, interviewee: prefilledInterviewee }));
@@ -46,7 +47,7 @@ export default function InterviewPage() {
 
   function handleVerifyFact(fact) {
     setPrefilledInput("verification", fact);
-    router.push("/verification");
+    navigate("/verification");
   }
 
   async function handlePrepare() {
@@ -122,12 +123,12 @@ export default function InterviewPage() {
           />
           <NextStepsPanel
             actions={[
-              { emoji: "🎙️", label: "Ya la hice: transcribir la entrevista", onClick: () => router.push("/transcription") },
+              { emoji: "🎙️", label: "Ya la hice: transcribir la entrevista", onClick: () => navigate("/transcription") },
               { emoji: "💾", label: "Guardar en proyecto", onClick: () => setShowSaveModal(true) },
             ]}
           />
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
+            <Button variant="secondary" onClick={() => guardAction(handleReset)} className="w-full sm:w-auto">
               Nueva entrevista
             </Button>
           </div>

@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Home, FolderKanban, History, FileText, User, X, LogOut, Mic, Compass, FileEdit } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { getInitials } from "../../utils/formatters";
-import { getUnsavedWarningState } from "../../hooks/useUnsavedWarning";
-import UnsavedWarningModal from "../ui/UnsavedWarningModal";
+import { useGuardedNavigation } from "../../context/NavigationGuardContext";
 
 const NAV_ITEMS = [
   { href: "/home", label: "Inicio", icon: Home },
@@ -23,37 +21,17 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ open, onClose }) {
   const pathname = usePathname();
-  const router = useRouter();
+  const navigate = useGuardedNavigation();
   const { user, logout } = useAuth();
-  const [pendingHref, setPendingHref] = useState(null);
-  const [pendingSave, setPendingSave] = useState(null);
 
+  // Los enlaces pasan por el guardián de navegación: si hay resultados sin
+  // guardar, avisa antes de salir.
   function handleNavClick(e, href) {
-    const { hasUnsavedResults, onRequestSave } = getUnsavedWarningState();
-    if (hasUnsavedResults) {
-      e.preventDefault();
-      setPendingHref(href);
-      setPendingSave(() => onRequestSave);
-      return;
-    }
+    // Abrir en otra pestaña no saca al usuario de su trabajo.
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
     onClose();
-  }
-
-  function handleWarningClose() {
-    setPendingHref(null);
-    setPendingSave(null);
-  }
-
-  function handleWarningSave() {
-    pendingSave?.();
-    handleWarningClose();
-  }
-
-  function handleWarningDiscard() {
-    const href = pendingHref;
-    handleWarningClose();
-    onClose();
-    if (href) router.push(href);
+    navigate(href);
   }
 
   return (
@@ -132,13 +110,6 @@ export default function Sidebar({ open, onClose }) {
           </button>
         </div>
       </aside>
-
-      <UnsavedWarningModal
-        open={!!pendingHref}
-        onClose={handleWarningClose}
-        onSave={handleWarningSave}
-        onDiscard={handleWarningDiscard}
-      />
     </>
   );
 }

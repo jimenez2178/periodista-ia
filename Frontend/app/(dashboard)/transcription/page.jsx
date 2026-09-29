@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useGuardedAction, useGuardedNavigation } from "../../../context/NavigationGuardContext";
 import AudioUploader from "../../../components/transcription/AudioUploader";
 import TranscriptionResult from "../../../components/transcription/TranscriptionResult";
 import InterviewAnalysis from "../../../components/transcription/InterviewAnalysis";
@@ -28,7 +28,8 @@ function firstSentence(text) {
 }
 
 export default function TranscriptionPage() {
-  const router = useRouter();
+  const navigate = useGuardedNavigation();
+  const guardAction = useGuardedAction();
   const { credits, refreshCredits } = useCredits();
 
   const [transcribing, setTranscribing] = useState(false);
@@ -52,7 +53,7 @@ export default function TranscriptionPage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [savedToProject, setSavedToProject] = useState(false);
 
-  useUnsavedWarning(!!article && !savedToProject, () => setShowSaveModal(true));
+  useUnsavedWarning(!!article && !savedToProject, handleSaveToProject);
 
   async function handleSaveToProject(projectId) {
     await addItemToProject({ projectId, type: "article", itemId: article.id });
@@ -62,12 +63,12 @@ export default function TranscriptionPage() {
 
   function handleVerifyClaim() {
     setPrefilledInput("verification", firstSentence(article.body));
-    router.push("/verification");
+    navigate("/verification");
   }
 
   function handleInvestigateFurther() {
     setPrefilledInput("idea", article.title);
-    router.push("/idea");
+    navigate("/idea");
   }
 
   async function handleTranscribe(input) {
@@ -256,7 +257,7 @@ export default function TranscriptionPage() {
             ]}
           />
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
+            <Button variant="secondary" onClick={() => guardAction(handleReset)} className="w-full sm:w-auto">
               Nueva transcripción
             </Button>
             <Button onClick={() => setShowSaveModal(true)} className="w-full sm:w-auto">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useGuardedNavigation } from "../../../context/NavigationGuardContext";
 import ToolsForm from "../../../components/tools/ToolsForm";
 import ToolsResults from "../../../components/tools/ToolsResults";
 import Spinner from "../../../components/ui/Spinner";
@@ -34,7 +34,7 @@ function detectRelevantFeatures(recommendation) {
 }
 
 export default function ToolsPage() {
-  const router = useRouter();
+  const navigate = useGuardedNavigation();
 
   const [task, setTask] = useState("");
   const [loading, setLoading] = useState(false);
@@ -64,8 +64,8 @@ export default function ToolsPage() {
   const relevantFeatures = recommendation ? detectRelevantFeatures(recommendation) : [];
   const nextStepsActions =
     relevantFeatures.length > 0
-      ? relevantFeatures.map((f) => ({ emoji: f.emoji, label: f.label, onClick: () => router.push(f.href) }))
-      : [{ emoji: "🏠", label: "Ir al inicio", onClick: () => router.push("/home") }];
+      ? relevantFeatures.map((f) => ({ emoji: f.emoji, label: f.label, onClick: () => navigate(f.href) }))
+      : [{ emoji: "🏠", label: "Ir al inicio", onClick: () => navigate("/home") }];
 
   return (
     <div className="flex flex-col gap-6">

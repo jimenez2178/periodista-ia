@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useGuardedAction, useGuardedNavigation } from "../../../context/NavigationGuardContext";
 import DocToNoteForm from "../../../components/doc-to-note/DocToNoteForm";
 import DocToNoteResult from "../../../components/doc-to-note/DocToNoteResult";
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
@@ -20,7 +20,8 @@ function firstSentence(text) {
 }
 
 export default function DocToNotePage() {
-  const router = useRouter();
+  const navigate = useGuardedNavigation();
+  const guardAction = useGuardedAction();
   const { credits, refreshCredits } = useCredits();
 
   const [generating, setGenerating] = useState(false);
@@ -35,7 +36,7 @@ export default function DocToNotePage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [savedToProject, setSavedToProject] = useState(false);
 
-  useUnsavedWarning(!!article && !savedToProject, () => setShowSaveModal(true));
+  useUnsavedWarning(!!article && !savedToProject, handleSaveToProject);
 
   async function handleGenerate(options) {
     setGenerating(true);
@@ -68,7 +69,7 @@ export default function DocToNotePage() {
 
   function handleVerify() {
     setPrefilledInput("verification", firstSentence(article.body));
-    router.push("/verification");
+    navigate("/verification");
   }
 
   function handleReset() {
@@ -122,7 +123,7 @@ export default function DocToNotePage() {
             onVerify={handleVerify}
             onSaveToProject={() => setShowSaveModal(true)}
             onRegenerate={showForm ? undefined : () => setShowForm(true)}
-            onReset={handleReset}
+            onReset={() => guardAction(handleReset)}
           />
         </>
       )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useGuardedAction, useGuardedNavigation } from "../../../context/NavigationGuardContext";
 import ClaimInput from "../../../components/verification/ClaimInput";
 import VerificationResult from "../../../components/verification/VerificationResult";
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
@@ -17,7 +17,8 @@ import { usePrefilledInput, setPrefilledInput } from "../../../hooks/usePrefille
 import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
 
 export default function VerificationPage() {
-  const router = useRouter();
+  const navigate = useGuardedNavigation();
+  const guardAction = useGuardedAction();
   const [claim, setClaim] = useState("");
   const [context, setContext] = useState("");
   const [result, setResult] = useState(null);
@@ -30,7 +31,7 @@ export default function VerificationPage() {
   const { refreshCredits } = useCredits();
   const prefilledClaim = usePrefilledInput("verification");
 
-  useUnsavedWarning(!!result && !savedToProject, () => setShowSaveModal(true));
+  useUnsavedWarning(!!result && !savedToProject, handleSaveToProject);
 
   useEffect(() => {
     if (prefilledClaim) setClaim(prefilledClaim);
@@ -44,7 +45,7 @@ export default function VerificationPage() {
 
   function handleInvestigateFurther() {
     setPrefilledInput("idea", claim);
-    router.push("/idea");
+    navigate("/idea");
   }
 
   async function handleVerify() {
@@ -116,7 +117,7 @@ export default function VerificationPage() {
             ]}
           />
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
+            <Button variant="secondary" onClick={() => guardAction(handleReset)} className="w-full sm:w-auto">
               Nueva verificación
             </Button>
             <Button onClick={() => setShowSaveModal(true)} className="w-full sm:w-auto">

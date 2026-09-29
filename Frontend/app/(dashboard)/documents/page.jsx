@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useGuardedAction, useGuardedNavigation } from "../../../context/NavigationGuardContext";
 import DocumentUploader from "../../../components/documents/DocumentUploader";
 import DocumentResults from "../../../components/documents/DocumentResults";
 import DocumentNoteModal from "../../../components/documents/DocumentNoteModal";
@@ -20,7 +20,8 @@ import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
 import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
 
 export default function DocumentsPage() {
-  const router = useRouter();
+  const navigate = useGuardedNavigation();
+  const guardAction = useGuardedAction();
   const { credits, refreshCredits } = useCredits();
 
   const [loading, setLoading] = useState(false);
@@ -41,10 +42,13 @@ export default function DocumentsPage() {
   const [showNoteSaveModal, setShowNoteSaveModal] = useState(false);
   const [noteSavedToProject, setNoteSavedToProject] = useState(false);
 
-  useUnsavedWarning(
-    (!!result && !savedToProject) || (!!note && !noteSavedToProject),
-    () => setShowSaveModal(true),
-  );
+  // Antes de salir se guarda todo lo pendiente (análisis y nota) en el mismo proyecto.
+  async function handleSaveAllToProject(projectId) {
+    if (result && !savedToProject) await handleSaveToProject(projectId);
+    if (note && !noteSavedToProject) await handleSaveNoteToProject(projectId);
+  }
+
+  useUnsavedWarning((!!result && !savedToProject) || (!!note && !noteSavedToProject), handleSaveAllToProject);
 
   async function handleAnalyze({ file, analysisTypes }) {
     setLoading(true);
@@ -78,17 +82,17 @@ export default function DocumentsPage() {
 
   function handleVerifyFinding(finding) {
     setPrefilledInput("verification", finding);
-    router.push("/verification");
+    navigate("/verification");
   }
 
   function handleInvestigateStory(story) {
     setPrefilledInput("idea", `${story.title}. ${story.description}`);
-    router.push("/idea");
+    navigate("/idea");
   }
 
   function handleTurnIntoIdea() {
     setPrefilledInput("idea", result.results.executive_summary || "");
-    router.push("/idea");
+    navigate("/idea");
   }
 
   function openNoteModal(story) {
@@ -209,7 +213,7 @@ export default function DocumentsPage() {
             ]}
           />
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
+            <Button variant="secondary" onClick={() => guardAction(handleReset)} className="w-full sm:w-auto">
               Nuevo análisis
             </Button>
           </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../hooks/useAuth";
 import { CreditsProvider } from "../../context/CreditsContext";
+import { NavigationGuardProvider } from "../../context/NavigationGuardContext";
 import Sidebar from "../../components/layout/Sidebar";
 import TopBar from "../../components/layout/TopBar";
 import PageWrapper from "../../components/layout/PageWrapper";
@@ -31,14 +32,16 @@ export default function DashboardLayout({ children }) {
 
   return (
     <CreditsProvider>
-      <div className="flex h-screen bg-brand-bg">
-        <Sidebar open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <TopBar onMenuClick={() => setMobileMenuOpen(true)} />
-          <PageWrapper>{children}</PageWrapper>
+      <NavigationGuardProvider>
+        <div className="flex h-screen bg-brand-bg">
+          <Sidebar open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <TopBar onMenuClick={() => setMobileMenuOpen(true)} />
+            <PageWrapper>{children}</PageWrapper>
+          </div>
         </div>
-      </div>
-      <AssistantButton />
+        <AssistantButton />
+      </NavigationGuardProvider>
     </CreditsProvider>
   );
 }

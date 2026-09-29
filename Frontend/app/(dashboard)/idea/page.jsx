@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useGuardedAction, useGuardedNavigation } from "../../../context/NavigationGuardContext";
 import IdeaInput from "../../../components/idea/IdeaInput";
 import InvestigationPlan from "../../../components/idea/InvestigationPlan";
 import IdeaToNoteModal from "../../../components/idea/IdeaToNoteModal";
@@ -21,7 +21,8 @@ import { usePrefilledInput, setPrefilledInput } from "../../../hooks/usePrefille
 import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
 
 export default function IdeaPage() {
-  const router = useRouter();
+  const navigate = useGuardedNavigation();
+  const guardAction = useGuardedAction();
   const [idea, setIdea] = useState("");
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -43,10 +44,13 @@ export default function IdeaPage() {
   const { refreshCredits } = useCredits();
   const prefilledIdea = usePrefilledInput("idea");
 
-  useUnsavedWarning(
-    (!!plan && !savedToProject) || (!!note && !noteSavedToProject),
-    () => setShowSaveModal(true),
-  );
+  // Antes de salir se guarda todo lo pendiente (plan y nota) en el mismo proyecto.
+  async function handleSaveAllToProject(projectId) {
+    if (plan && !savedToProject) await handleSaveToProject(projectId);
+    if (note && !noteSavedToProject) await handleSaveNoteToProject(projectId);
+  }
+
+  useUnsavedWarning((!!plan && !savedToProject) || (!!note && !noteSavedToProject), handleSaveAllToProject);
 
   useEffect(() => {
     if (prefilledIdea) setIdea(prefilledIdea);
@@ -61,7 +65,7 @@ export default function IdeaPage() {
 
   function handleVerifyClaim() {
     setPrefilledInput("verification", idea);
-    router.push("/verification");
+    navigate("/verification");
   }
 
   async function handleGenerate() {
@@ -182,13 +186,13 @@ export default function IdeaPage() {
           <NextStepsPanel
             actions={[
               { emoji: "🔍", label: "Verificar una afirmación", onClick: handleVerifyClaim },
-              { emoji: "📄", label: "Analizar un documento", onClick: () => router.push("/documents") },
-              { emoji: "🎙️", label: "Preparar entrevista", onClick: () => router.push("/interview") },
+              { emoji: "📄", label: "Analizar un documento", onClick: () => navigate("/documents") },
+              { emoji: "🎙️", label: "Preparar entrevista", onClick: () => navigate("/interview") },
               { emoji: "💾", label: "Guardar en proyecto", onClick: () => setShowSaveModal(true) },
             ]}
           />
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
+            <Button variant="secondary" onClick={() => guardAction(handleReset)} className="w-full sm:w-auto">
               Nueva idea
             </Button>
             <Button onClick={() => setShowSaveModal(true)} className="w-full sm:w-auto">
