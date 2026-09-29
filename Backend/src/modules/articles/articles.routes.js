@@ -1,12 +1,13 @@
 const express = require("express");
 const requireCredits = require("../../middleware/credits");
 const { incrementUsedCredits } = require("../credits/credits.service");
-const { generateArticle, saveArticle, formatIdeaContent } = require("./articles.service");
+const { generateArticle, saveArticle, updateArticle, formatIdeaContent } = require("./articles.service");
 const { supabaseAdmin } = require("../../config/supabase");
 
 const router = express.Router();
 
 const VALID_TYPES = ["news_article", "press_release"];
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 router.post("/", requireCredits, async (req, res, next) => {
   try {
@@ -80,6 +81,30 @@ router.post("/", requireCredits, async (req, res, next) => {
     });
 
     res.json(saved);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/:id", async (req, res, next) => {
+  try {
+    const { title, body } = req.body;
+
+    if (typeof title !== "string" || typeof body !== "string" || !title.trim() || !body.trim()) {
+      return res.status(400).json({ error: "El título y el cuerpo de la nota no pueden estar vacíos." });
+    }
+
+    if (!UUID_PATTERN.test(req.params.id)) {
+      return res.status(404).json({ error: "No se encontró la nota." });
+    }
+
+    const updated = await updateArticle({ userId: req.user.id, articleId: req.params.id, title, body });
+
+    if (!updated) {
+      return res.status(404).json({ error: "No se encontró la nota." });
+    }
+
+    res.json(updated);
   } catch (err) {
     next(err);
   }

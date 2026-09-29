@@ -78,4 +78,19 @@ async function saveArticle({ userId, transcriptionId, sessionId, type, organizat
   return data;
 }
 
-module.exports = { generateArticle, saveArticle, formatIdeaContent };
+async function updateArticle({ userId, articleId, title, body }) {
+  const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
+
+  const { data, error } = await supabaseAdmin
+    .from("articles")
+    .update({ title, body, word_count: wordCount, updated_at: new Date().toISOString() })
+    .eq("id", articleId)
+    .eq("user_id", userId)
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+module.exports = { generateArticle, saveArticle, updateArticle, formatIdeaContent };

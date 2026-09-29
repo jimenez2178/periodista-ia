@@ -9,6 +9,7 @@ import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import { generateNoteFromDocument, saveNoteToProject } from "../../../services/doc-to-note.service";
+import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
 import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
@@ -56,13 +57,20 @@ export default function DocToNotePage() {
   }
 
   async function handleSaveToProject(projectId) {
-    await saveNoteToProject({
-      title: article.title,
-      body: article.body,
-      format: meta.format,
-      organizationName: meta.organizationName,
-      projectId,
-    });
+    if (article.id) {
+      await addItemToProject({ projectId, type: "article", itemId: article.id });
+    } else {
+      // Con el id, las ediciones siguientes se autoguardan y un segundo
+      // guardado mueve la misma nota en vez de crear un duplicado.
+      const saved = await saveNoteToProject({
+        title: article.title,
+        body: article.body,
+        format: meta.format,
+        organizationName: meta.organizationName,
+        projectId,
+      });
+      setArticle((current) => ({ ...current, id: saved.id }));
+    }
     setSavedToProject(true);
     setToastMessage("Guardado en el proyecto.");
   }

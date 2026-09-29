@@ -21,3 +21,27 @@ export async function generateArticle(payload) {
 
   return data;
 }
+
+export async function updateArticle(id, { title, body }, { keepalive = false } = {}) {
+  const response = await fetch(`/api/proxy/articles/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, body }),
+    keepalive,
+  });
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const error = new Error(data?.error || "No pudimos guardar los cambios de la nota.");
+    error.status = response.status;
+    throw error;
+  }
+
+  return data;
+}
