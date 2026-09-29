@@ -7,51 +7,9 @@ import Button from "../../../components/ui/Button";
 import Spinner from "../../../components/ui/Spinner";
 import ActivityCard from "../../../components/history/ActivityCard";
 import { listHistory } from "../../../services/history.service";
+import { FEATURES } from "../../../utils/features";
 
-const FEATURES = [
-  {
-    href: "/transcription",
-    emoji: "🎙️",
-    title: "De entrevista a noticia",
-    description: "Transcribe tu entrevista y genera tu nota en segundos",
-  },
-  {
-    href: "/idea",
-    emoji: "💡",
-    title: "Tengo una idea",
-    description: "Convierte una observación en un plan de investigación y produce tu pitch o tu nota",
-  },
-  {
-    href: "/verification",
-    emoji: "🔍",
-    title: "Verificar fuentes",
-    description: "Confirma si una afirmación tiene respaldo real, con búsqueda en internet y fuentes",
-  },
-  {
-    href: "/documents",
-    emoji: "📄",
-    title: "Analizar documento",
-    description: "Sube un PDF, Word o Excel, obtén hallazgos clave y redacta tu nota a partir de ellos",
-  },
-  {
-    href: "/interview",
-    emoji: "🗣️",
-    title: "Preparar entrevista",
-    description: "Investiga al entrevistado y recibe un guion de preguntas para tu próxima entrevista",
-  },
-  {
-    href: "/tools",
-    emoji: "🧭",
-    title: "¿Qué herramienta necesito?",
-    description: "Describe tu tarea y recibe una recomendación de flujo de trabajo",
-  },
-  {
-    href: "/doc-to-note",
-    emoji: "📝",
-    title: "De documento a nota",
-    description: "Sube un documento y conviértelo directo en una nota lista para publicar",
-  },
-];
+const HOME_FEATURES = FEATURES.filter((feature) => feature.showOnHome !== false);
 
 export default function HomePage() {
   const [items, setItems] = useState([]);
@@ -69,7 +27,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {FEATURES.map((feature) => (
+        {HOME_FEATURES.map((feature) => (
           <Card key={feature.href} variant="elevated" className="flex flex-col gap-3">
             <span className="text-3xl">{feature.emoji}</span>
             <h2 className="text-lg font-bold text-brand-text">{feature.title}</h2>

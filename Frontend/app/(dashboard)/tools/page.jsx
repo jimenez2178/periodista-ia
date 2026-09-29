@@ -6,37 +6,14 @@ import ToolsForm from "../../../components/tools/ToolsForm";
 import ToolsResults from "../../../components/tools/ToolsResults";
 import Spinner from "../../../components/ui/Spinner";
 import Button from "../../../components/ui/Button";
-import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import { recommendWorkflow } from "../../../services/tools.service";
-
-const FEATURE_MATCHERS = [
-  { href: "/idea", emoji: "💡", label: "Tengo una idea", keywords: ["tengo una idea", "plan de investigación"] },
-  { href: "/verification", emoji: "🔍", label: "Verificar fuentes", keywords: ["verificar fuentes", "verificación"] },
-  {
-    href: "/transcription",
-    emoji: "🎙️",
-    label: "De entrevista a noticia",
-    keywords: ["entrevista a noticia", "transcri"],
-  },
-  { href: "/documents", emoji: "📄", label: "Analizar documento", keywords: ["analizar documento"] },
-  { href: "/interview", emoji: "🎙️", label: "Preparar entrevista", keywords: ["preparar entrevista"] },
-];
-
-function detectRelevantFeatures(recommendation) {
-  const haystack = [
-    recommendation.periodista_ia_role,
-    ...(recommendation.steps || []).flatMap((s) => [s.step, ...(s.tools || [])]),
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  return FEATURE_MATCHERS.filter((feature) => feature.keywords.some((keyword) => haystack.includes(keyword)));
-}
+import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
 
 export default function ToolsPage() {
   const navigate = useGuardedNavigation();
 
   const [task, setTask] = useState("");
+  const [submittedTask, setSubmittedTask] = useState("");
   const [loading, setLoading] = useState(false);
   const [recommendation, setRecommendation] = useState(null);
   const [error, setError] = useState("");
@@ -48,6 +25,7 @@ export default function ToolsPage() {
     try {
       const data = await recommendWorkflow({ task: task.trim() });
       setRecommendation(data);
+      setSubmittedTask(task.trim());
     } catch (err) {
       setError(err.message);
     } finally {
@@ -55,24 +33,26 @@ export default function ToolsPage() {
     }
   }
 
+  // "Tengo una idea" arranca con la tarea ya escrita; el resto abre la sección.
+  function handleOpenFeature(feature) {
+    if (feature.slug === "idea") setPrefilledInput("idea", submittedTask);
+    navigate(feature.href);
+  }
+
   function handleReset() {
     setTask("");
+    setSubmittedTask("");
     setRecommendation(null);
     setError("");
   }
-
-  const relevantFeatures = recommendation ? detectRelevantFeatures(recommendation) : [];
-  const nextStepsActions =
-    relevantFeatures.length > 0
-      ? relevantFeatures.map((f) => ({ emoji: f.emoji, label: f.label, onClick: () => navigate(f.href) }))
-      : [{ emoji: "🏠", label: "Ir al inicio", onClick: () => navigate("/home") }];
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold text-brand-text">🧭 ¿Qué herramienta necesito?</h1>
         <p className="mt-1 text-sm text-brand-text/70">
-          Describe tu tarea y recibe una recomendación de flujo de trabajo con herramientas.
+          Describe tu tarea y recibe un flujo de trabajo paso a paso, con lo que puedes hacer en PeriodistaIA y las
+          herramientas externas que te sirven.
         </p>
       </div>
 
@@ -89,8 +69,10 @@ export default function ToolsPage() {
 
       {recommendation && !loading && (
         <>
-          <ToolsResults recommendation={recommendation} />
-          <NextStepsPanel actions={nextStepsActions} />
+          <div className="rounded-brand bg-brand-bg px-4 py-3 text-sm text-brand-text/80">
+            <span className="font-medium">Tu tarea:</span> {submittedTask}
+          </div>
+          <ToolsResults task={submittedTask} recommendation={recommendation} onOpenFeature={handleOpenFeature} />
           <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
             Nueva consulta
           </Button>
