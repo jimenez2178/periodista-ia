@@ -127,6 +127,38 @@ router.post("/analyze", async (req, res, next) => {
   }
 });
 
+// Reabre una transcripción guardada (con su análisis) para generar la nota después.
+router.get("/:id", async (req, res, next) => {
+  try {
+    if (!UUID_PATTERN.test(req.params.id)) {
+      return res.status(404).json({ error: "No se encontró la transcripción." });
+    }
+
+    const { data: transcription, error } = await supabaseAdmin
+      .from("transcriptions")
+      .select("id, transcript_text, language_detected, audio_duration_secs, interview_analysis, project_id")
+      .eq("id", req.params.id)
+      .eq("user_id", req.user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!transcription) {
+      return res.status(404).json({ error: "No se encontró la transcripción." });
+    }
+
+    res.json({
+      transcription_id: transcription.id,
+      transcript: transcription.transcript_text,
+      language: transcription.language_detected,
+      duration: transcription.audio_duration_secs,
+      analysis: transcription.interview_analysis,
+      project_id: transcription.project_id,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // El periodista corrige lo que Whisper transcribió mal (nombres propios, siglas,
 // cifras) antes de generar la nota; la nota se redacta desde este texto.
 router.patch("/:id", async (req, res, next) => {

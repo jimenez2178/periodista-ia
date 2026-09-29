@@ -97,3 +97,47 @@ export async function addItemToProject({ projectId, type, itemId }) {
 
   return data;
 }
+
+export async function updateProject(id, { title, description }) {
+  const response = await fetch(`/api/proxy/projects/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, description }),
+  });
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const error = new Error(data?.error || "No pudimos actualizar el proyecto. Intenta de nuevo.");
+    error.status = response.status;
+    throw error;
+  }
+
+  return data;
+}
+
+// Quita el elemento del proyecto; no lo borra (sigue en el historial).
+export async function removeItemFromProject({ projectId, type, itemId }) {
+  const response = await fetch(`/api/proxy/projects/${projectId}/items`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, item_id: itemId }),
+  });
+
+  if (!response.ok) {
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+    const error = new Error(data?.error || "No pudimos quitar el elemento del proyecto.");
+    error.status = response.status;
+    throw error;
+  }
+}

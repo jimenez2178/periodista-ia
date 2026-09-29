@@ -1,10 +1,23 @@
+"use client";
+
+import { useState } from "react";
 import InvestigationPlan from "../idea/InvestigationPlan";
 import VerificationResult from "../verification/VerificationResult";
 import DocumentResults from "../documents/DocumentResults";
-import Button from "../ui/Button";
-import { downloadAsPdf, downloadAsWord } from "../../services/downloads.service";
+import InterviewResults from "../interview/InterviewResults";
+import ArticleResult from "../transcription/ArticleResult";
+import { useGuardedNavigation } from "../../context/NavigationGuardContext";
+import { setPrefilledInput } from "../../hooks/usePrefilledInput";
+
+// Las notas se editan aquí mismo (con autoguardado); el resto se muestra para
+// consultar, y los tipos que se pueden continuar tienen "Abrir y continuar" en la tarjeta.
+function EditableArticle({ detail }) {
+  const [article, setArticle] = useState(detail);
+  return <ArticleResult article={article} onArticleChange={setArticle} />;
+}
 
 export default function ItemDetail({ item }) {
+  const navigate = useGuardedNavigation();
   const { type, detail } = item;
   if (!detail) return null;
 
@@ -25,23 +38,25 @@ export default function ItemDetail({ item }) {
   }
 
   if (type === "article") {
-    return (
-      <div className="flex flex-col gap-3">
-        <div className="whitespace-pre-wrap rounded-brand border border-brand-border bg-brand-bg p-4 text-sm text-brand-text/80">
-          {detail.body}
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={() => downloadAsPdf(detail)}>⬇️ Descargar PDF</Button>
-          <Button variant="secondary" onClick={() => downloadAsWord(detail)}>
-            ⬇️ Descargar Word
-          </Button>
-        </div>
-      </div>
-    );
+    return <EditableArticle detail={detail} />;
   }
 
   if (type === "document") {
     return <DocumentResults analysisTypes={detail.analysis_types} results={detail.results} />;
+  }
+
+  if (type === "interview") {
+    return (
+      <InterviewResults
+        interviewee={detail.interviewee}
+        topic={detail.topic}
+        results={detail.results}
+        onVerifyFact={(fact) => {
+          setPrefilledInput("verification", fact);
+          navigate("/verification");
+        }}
+      />
+    );
   }
 
   if (type === "transcription") {

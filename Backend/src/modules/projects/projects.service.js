@@ -1,4 +1,5 @@
 const { supabaseAdmin } = require("../../config/supabase");
+const { ITEM_COLUMNS, normalizeItems } = require("../../utils/itemNormalizer");
 
 const ITEM_TABLES = {
   article: "articles",
@@ -9,104 +10,6 @@ const ITEM_TABLES = {
   idea: "sessions",
 };
 
-function truncate(text, length = 160) {
-  if (!text) return "";
-  const clean = text.trim();
-  return clean.length > length ? `${clean.slice(0, length)}…` : clean;
-}
-
-function parsePlan(content) {
-  if (!content) return null;
-  try {
-    return JSON.parse(content);
-  } catch {
-    return null;
-  }
-}
-
-function summarizePlan(plan) {
-  return truncate(plan?.angle_suggestions?.[0]) || "Plan de investigación guardado.";
-}
-
-function summarizeDocument(analysisTypes) {
-  const count = (analysisTypes || []).length;
-  return count === 1 ? "1 tipo de análisis" : `${count} tipos de análisis`;
-}
-
-function normalizeItems({ articles, sources, transcriptions, sessions, documents, interviews }) {
-  const items = [
-    ...articles.map((a) => ({
-      id: a.id,
-      type: "article",
-      title: a.title,
-      subtitle: truncate(a.body),
-      created_at: a.created_at,
-      detail: { title: a.title, body: a.body },
-    })),
-    ...sources.map((s) => ({
-      id: s.id,
-      type: "source",
-      title: s.claim,
-      subtitle: `${s.verdict} — ${truncate(s.explanation)}`,
-      created_at: s.created_at,
-      detail: {
-        claim: s.claim,
-        verdict: s.verdict,
-        verdict_label: s.verdict_label,
-        confidence_level: s.confidence_level,
-        explanation: s.explanation,
-        evidence_found: s.evidence_found,
-        sources_used: s.sources_used || [],
-        what_to_verify: s.what_to_verify,
-      },
-    })),
-    ...transcriptions.map((t) => ({
-      id: t.id,
-      type: "transcription",
-      title: "Transcripción de audio",
-      subtitle: truncate(t.transcript_text),
-      created_at: t.created_at,
-      detail: { transcript_text: t.transcript_text },
-    })),
-    ...sessions.map((s) => {
-      const idea = (s.messages || []).find((m) => m.role === "user")?.content;
-      const plan = parsePlan((s.messages || []).find((m) => m.role === "assistant")?.content);
-      return {
-        id: s.id,
-        type: "idea",
-        title: s.title || "Idea",
-        subtitle: summarizePlan(plan),
-        created_at: s.created_at,
-        detail: { idea: idea || s.title, plan },
-      };
-    }),
-    ...documents.map((d) => ({
-      id: d.id,
-      type: "document",
-      title: d.file_name,
-      subtitle: summarizeDocument(d.analysis_types),
-      created_at: d.created_at,
-      detail: {
-        file_name: d.file_name,
-        file_type: d.file_type,
-        analysis_types: d.analysis_types,
-        results: d.results,
-      },
-    })),
-    ...interviews.map((i) => ({
-      id: i.id,
-      type: "interview",
-      title: i.interviewee,
-      subtitle: truncate(i.topic),
-      created_at: i.created_at,
-      detail: { interviewee: i.interviewee, topic: i.topic, results: i.results },
-    })),
-  ];
-
-  items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  return items;
-}
-
 async function listProjectsForUser(userId) {
   const { data: projects, error } = await supabaseAdmin
     .from("projects")
@@ -116,32 +19,22 @@ async function listProjectsForUser(userId) {
 
   if (error) throw error;
 
-  const withCounts = await Promise.all(
-    projects.map(async (project) => {
-      const [articles, sources, transcriptions, sessions, documents, interviews] = await Promise.all([
-        supabaseAdmin.from("articles").select("id", { count: "exact", head: true }).eq("project_id", project.id),
-        supabaseAdmin.from("sources").select("id", { count: "exact", head: true }).eq("project_id", project.id),
-        supabaseAdmin
-          .from("transcriptions")
-          .select("id", { count: "exact", head: true })
-          .eq("project_id", project.id),
-        supabaseAdmin.from("sessions").select("id", { count: "exact", head: true }).eq("project_id", project.id),
-        supabaseAdmin.from("documents").select("id", { count: "exact", head: true }).eq("project_id", project.id),
-        supabaseAdmin.from("interviews").select("id", { count: "exact", head: true }).eq("project_id", project.id),
-      ]);
-
-      const item_count =
-        (articles.count || 0) +
-        (sources.count || 0) +
-        (transcriptions.count || 0) +
-        (sessions.count || 0) +
-        (documents.count || 0) +
-        (interviews.count || 0);
-      return { ...project, item_count };
-    })
+  // Una consulta por tabla (no una por proyecto y tabla): se cuentan los
+  // elementos vinculados de todos los proyectos del usuario a la vez.
+  const tables = [...new Set(Object.values(ITEM_TABLES))];
+  const results = await Promise.all(
+    tables.map((table) =>
+      supabaseAdmin.from(table).select("project_id").eq("user_id", userId).not("project_id", "is", null)
+    )
   );
 
-  return withCounts;
+  const counts = {};
+  for (const { data, error: countError } of results) {
+    if (countError) throw countError;
+    for (const row of data) counts[row.project_id] = (counts[row.project_id] || 0) + 1;
+  }
+
+  return projects.map((project) => ({ ...project, item_count: counts[project.id] || 0 }));
 }
 
 async function createProject({ userId, title, description }) {
@@ -165,44 +58,69 @@ async function getProjectWithItems({ projectId, userId }) {
 
   if (projectError || !project) return null;
 
-  const [articlesRes, sourcesRes, transcriptionsRes, sessionsRes, documentsRes, interviewsRes] = await Promise.all([
-    supabaseAdmin.from("articles").select("id, title, body, created_at").eq("project_id", projectId),
+  const [articles, sources, transcriptions, sessions, documents, interviews] = await Promise.all([
+    supabaseAdmin.from("articles").select(ITEM_COLUMNS.articles).eq("project_id", projectId).eq("user_id", userId),
+    supabaseAdmin.from("sources").select(ITEM_COLUMNS.sources).eq("project_id", projectId).eq("user_id", userId),
     supabaseAdmin
-      .from("sources")
-      .select(
-        "id, claim, verdict, verdict_label, confidence_level, explanation, evidence_found, sources_used, what_to_verify, created_at"
-      )
-      .eq("project_id", projectId),
-    supabaseAdmin.from("transcriptions").select("id, transcript_text, created_at").eq("project_id", projectId),
+      .from("transcriptions")
+      .select(ITEM_COLUMNS.transcriptions)
+      .eq("project_id", projectId)
+      .eq("user_id", userId),
     supabaseAdmin
       .from("sessions")
-      .select("id, title, created_at, messages(role, content)")
+      .select(ITEM_COLUMNS.sessions)
       .eq("project_id", projectId)
+      .eq("user_id", userId)
       .eq("function_used", "idea"),
-    supabaseAdmin
-      .from("documents")
-      .select("id, file_name, file_type, analysis_types, results, created_at")
-      .eq("project_id", projectId),
-    supabaseAdmin.from("interviews").select("id, interviewee, topic, results, created_at").eq("project_id", projectId),
+    supabaseAdmin.from("documents").select(ITEM_COLUMNS.documents).eq("project_id", projectId).eq("user_id", userId),
+    supabaseAdmin.from("interviews").select(ITEM_COLUMNS.interviews).eq("project_id", projectId).eq("user_id", userId),
   ]);
 
-  if (articlesRes.error) throw articlesRes.error;
-  if (sourcesRes.error) throw sourcesRes.error;
-  if (transcriptionsRes.error) throw transcriptionsRes.error;
-  if (sessionsRes.error) throw sessionsRes.error;
-  if (documentsRes.error) throw documentsRes.error;
-  if (interviewsRes.error) throw interviewsRes.error;
+  for (const res of [articles, sources, transcriptions, sessions, documents, interviews]) {
+    if (res.error) throw res.error;
+  }
 
   const items = normalizeItems({
-    articles: articlesRes.data,
-    sources: sourcesRes.data,
-    transcriptions: transcriptionsRes.data,
-    sessions: sessionsRes.data,
-    documents: documentsRes.data,
-    interviews: interviewsRes.data,
+    articles: articles.data,
+    sources: sources.data,
+    transcriptions: transcriptions.data,
+    sessions: sessions.data,
+    documents: documents.data,
+    interviews: interviews.data,
   });
 
   return { ...project, items };
+}
+
+async function updateProject({ userId, projectId, title, description }) {
+  const { data, error } = await supabaseAdmin
+    .from("projects")
+    .update({ title, description: description || null, updated_at: new Date().toISOString() })
+    .eq("id", projectId)
+    .eq("user_id", userId)
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// Quita un elemento del proyecto sin borrarlo: sigue en el historial.
+async function detachItemFromProject({ userId, projectId, type, itemId }) {
+  const table = ITEM_TABLES[type];
+  if (!table) throw new Error("Tipo de elemento inválido.");
+
+  const { data, error } = await supabaseAdmin
+    .from(table)
+    .update({ project_id: null })
+    .eq("id", itemId)
+    .eq("project_id", projectId)
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
 }
 
 async function attachItemToProject({ userId, projectId, type, itemId }) {
@@ -242,12 +160,11 @@ async function deleteProject({ userId, projectId }) {
 
   // Los elementos guardados (notas, verificaciones, transcripciones, ideas) no se
   // borran: solo se desvinculan del proyecto y siguen visibles en el historial.
-  await Promise.all([
-    ...Object.values(ITEM_TABLES).map((table) =>
+  await Promise.all(
+    Object.values(ITEM_TABLES).map((table) =>
       supabaseAdmin.from(table).update({ project_id: null }).eq("project_id", projectId)
-    ),
-    supabaseAdmin.from("sessions").update({ project_id: null }).eq("project_id", projectId),
-  ]);
+    )
+  );
 
   const { error } = await supabaseAdmin.from("projects").delete().eq("id", projectId);
   if (error) throw error;
@@ -257,6 +174,8 @@ module.exports = {
   listProjectsForUser,
   createProject,
   getProjectWithItems,
+  updateProject,
   attachItemToProject,
+  detachItemFromProject,
   deleteProject,
 };

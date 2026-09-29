@@ -48,3 +48,22 @@ export async function generateNoteFromAnalysis(documentId, { format, tone, lengt
 
   return data;
 }
+
+export async function getDocumentAnalysis(documentId) {
+  const response = await fetch(`/api/proxy/documents/${documentId}`);
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const error = new Error(data?.error || "No pudimos abrir el análisis.");
+    error.status = response.status;
+    throw error;
+  }
+
+  return data;
+}

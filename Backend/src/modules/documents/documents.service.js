@@ -158,6 +158,23 @@ async function saveDocument({ userId, fileName, fileType, fileSizeBytes, analysi
   return data;
 }
 
+// Para reabrir un análisis y seguir trabajando (redactar nota, verificar...).
+// No devuelve el texto extraído: solo si existe, porque sin él no se puede redactar.
+async function getDocumentAnalysis({ userId, documentId }) {
+  const { data, error } = await supabaseAdmin
+    .from("documents")
+    .select("id, file_name, file_type, analysis_types, results, project_id, created_at, extracted_text")
+    .eq("id", documentId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const { extracted_text: extractedText, ...document } = data;
+  return { ...document, can_write_note: !!extractedText };
+}
+
 async function getDocumentForNote({ userId, documentId }) {
   const { data, error } = await supabaseAdmin
     .from("documents")
@@ -176,5 +193,6 @@ module.exports = {
   extractText,
   generateDocumentAnalysis,
   saveDocument,
+  getDocumentAnalysis,
   getDocumentForNote,
 };

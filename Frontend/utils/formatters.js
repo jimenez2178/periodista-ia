@@ -17,11 +17,32 @@ const ITEM_TYPE_META = {
   source: { emoji: "🔍", label: "Verificación" },
   idea: { emoji: "💡", label: "Idea" },
   document: { emoji: "📄", label: "Documento" },
-  interview: { emoji: "🎙️", label: "Entrevista" },
+  interview: { emoji: "🗣️", label: "Entrevista" },
 };
 
-export function getItemTypeMeta(type) {
+// Los artículos pueden ser notas, comunicados o textos de "Tengo una idea".
+const ARTICLE_TYPE_META = {
+  news_article: { emoji: "📰", label: "Nota" },
+  press_release: { emoji: "📋", label: "Comunicado" },
+  pitch: { emoji: "📨", label: "Pitch" },
+  story_skeleton: { emoji: "🦴", label: "Esqueleto de nota" },
+};
+
+export function getItemTypeMeta(type, articleType) {
+  if (type === "article" && ARTICLE_TYPE_META[articleType]) return ARTICLE_TYPE_META[articleType];
   return ITEM_TYPE_META[type] || { emoji: "📄", label: "Elemento" };
+}
+
+// Elementos que se pueden reabrir en su sección para seguir trabajando.
+const REOPEN_PATHS = {
+  document: "/documents",
+  idea: "/idea",
+  transcription: "/transcription",
+};
+
+export function getReopenHref(item) {
+  const path = REOPEN_PATHS[item.type];
+  return path ? `${path}?id=${item.id}` : null;
 }
 
 export function formatRelativeDate(dateString) {

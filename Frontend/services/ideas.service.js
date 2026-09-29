@@ -2,7 +2,7 @@ async function request(path, { method = "POST", body, fallbackError }) {
   const response = await fetch(`/api/proxy/ideas${path}`, {
     method,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
 
   let data = null;
@@ -48,4 +48,9 @@ export function generateIdeaDraft(sessionId, { kind, angle, reporting }) {
     body: { kind, angle, reporting },
     fallbackError: "No pudimos redactar el texto. Intenta de nuevo.",
   });
+}
+
+// Reabre una idea guardada: { session_id, idea, plan, project_id }.
+export function getIdea(sessionId) {
+  return request(`/${sessionId}`, { method: "GET", fallbackError: "No pudimos abrir la idea." });
 }

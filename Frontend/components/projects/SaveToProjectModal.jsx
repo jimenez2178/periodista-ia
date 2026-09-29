@@ -25,7 +25,9 @@ export default function SaveToProjectModal({ open, onClose, onConfirm }) {
       .then((data) => {
         setProjects(data);
         setCreatingNew(data.length === 0);
-        setSelectedId(data[0]?.id || "");
+        // Si la tarea se empezó desde un proyecto (?project=...), ese va preseleccionado.
+        const fromUrl = new URLSearchParams(window.location.search).get("project");
+        setSelectedId(data.find((project) => project.id === fromUrl)?.id || data[0]?.id || "");
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoadingProjects(false));

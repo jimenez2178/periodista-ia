@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Modal from "../ui/Modal";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
 
-export default function CreateProjectModal({ open, onClose, onCreate, loading }) {
+// Sirve para crear un proyecto y, con `initialValues`, para editar uno existente.
+export default function CreateProjectModal({ open, onClose, onCreate, loading, initialValues }) {
+  const isEditing = !!initialValues;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setTitle(initialValues?.title || "");
+    setDescription(initialValues?.description || "");
+    setError("");
+  }, [open, initialValues]);
 
   function handleClose() {
     setTitle("");
@@ -31,14 +40,17 @@ export default function CreateProjectModal({ open, onClose, onCreate, loading })
     }
   }
 
+  const submitLabel = isEditing ? "Guardar cambios" : "Crear proyecto";
+
   return (
-    <Modal open={open} onClose={handleClose} title="Nuevo proyecto">
+    <Modal open={open} onClose={handleClose} title={isEditing ? "Editar proyecto" : "Nuevo proyecto"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Input
           id="project_title"
           label="Nombre del proyecto"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          maxLength={150}
           placeholder="Ej: Investigación sobre transporte público"
           autoFocus
         />
@@ -51,6 +63,7 @@ export default function CreateProjectModal({ open, onClose, onCreate, loading })
             id="project_description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            maxLength={1000}
             rows={3}
             placeholder="¿De qué se trata este proyecto?"
             className="rounded-brand border border-brand-border px-3 py-2.5 text-brand-text outline-none focus:border-brand-blue"
@@ -60,7 +73,7 @@ export default function CreateProjectModal({ open, onClose, onCreate, loading })
         {error && <p className="text-sm text-brand-error">{error}</p>}
 
         <Button type="submit" disabled={!title.trim() || loading}>
-          {loading ? "Creando..." : "Crear proyecto"}
+          {loading ? "Guardando..." : submitLabel}
         </Button>
       </form>
     </Modal>

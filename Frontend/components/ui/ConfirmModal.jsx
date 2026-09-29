@@ -15,6 +15,8 @@ export default function ConfirmModal({ open, onClose, onConfirm, title, descript
       await onConfirm();
     } catch (err) {
       setError(err.message);
+    } finally {
+      // Se reinicia también al terminar bien: el modal puede reutilizarse (ej. quitar varios elementos).
       setLoading(false);
     }
   }
@@ -29,7 +31,7 @@ export default function ConfirmModal({ open, onClose, onConfirm, title, descript
             Cancelar
           </Button>
           <Button variant="danger" onClick={handleConfirm} disabled={loading} className="w-full sm:w-auto">
-            {loading ? "Eliminando..." : confirmLabel}
+            {loading ? "Un momento..." : confirmLabel}
           </Button>
         </div>
       </div>

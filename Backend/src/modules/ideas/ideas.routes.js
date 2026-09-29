@@ -64,6 +64,17 @@ router.post("/", requireCredits, async (req, res, next) => {
   }
 });
 
+// Reabre una idea guardada para seguir trabajando en ella.
+router.get("/:id", async (req, res, next) => {
+  try {
+    const session = await loadSession(req, res);
+    if (!session) return;
+    res.json({ session_id: session.id, idea: session.idea, plan: session.plan, project_id: session.projectId });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post("/:id/refine", requireCredits, async (req, res, next) => {
   try {
     const instruction = optionalText(req.body.instruction, MAX_INSTRUCTION_LENGTH);

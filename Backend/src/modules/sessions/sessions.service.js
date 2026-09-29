@@ -27,7 +27,7 @@ async function createIdeaSession({ userId, projectId, idea, plan }) {
 async function getIdeaSession({ userId, sessionId }) {
   const { data: session, error } = await supabaseAdmin
     .from("sessions")
-    .select("id, messages(id, role, content)")
+    .select("id, project_id, messages(id, role, content)")
     .eq("id", sessionId)
     .eq("user_id", userId)
     .eq("function_used", "idea")
@@ -47,7 +47,13 @@ async function getIdeaSession({ userId, sessionId }) {
     return null;
   }
 
-  return { id: session.id, idea: ideaMessage.content, plan, planMessageId: planMessage.id };
+  return {
+    id: session.id,
+    projectId: session.project_id,
+    idea: ideaMessage.content,
+    plan,
+    planMessageId: planMessage.id,
+  };
 }
 
 async function updateIdeaPlan({ sessionId, planMessageId, plan }) {

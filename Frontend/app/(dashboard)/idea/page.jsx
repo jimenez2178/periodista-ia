@@ -18,11 +18,13 @@ import {
   refineInvestigationPlan,
   saveStepProgress,
   generateIdeaDraft,
+  getIdea,
 } from "../../../services/ideas.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { usePrefilledInput, setPrefilledInput } from "../../../hooks/usePrefilledInput";
 import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
+import { useUrlParam, clearUrlParam } from "../../../hooks/useUrlParam";
 
 export default function IdeaPage() {
   const navigate = useGuardedNavigation();
@@ -69,6 +71,24 @@ export default function IdeaPage() {
   useEffect(() => {
     if (prefilledIdea) setIdea(prefilledIdea);
   }, [prefilledIdea]);
+
+  // /idea?id=... reabre una idea guardada para seguir con el plan (desde Proyectos o Historial).
+  const reopenId = useUrlParam("id");
+  const [reopening, setReopening] = useState(false);
+
+  useEffect(() => {
+    if (!reopenId) return;
+    setReopening(true);
+    getIdea(reopenId)
+      .then((saved) => {
+        setIdea(saved.idea);
+        setSessionId(saved.session_id);
+        setPlan(saved.plan);
+        setSavedToProject(!!saved.project_id);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setReopening(false));
+  }, [reopenId]);
 
   function handleError(err) {
     if (err.status === 402) setNeedsUpgrade(true);
@@ -141,6 +161,7 @@ export default function IdeaPage() {
   }
 
   function handleReset() {
+    clearUrlParam("id");
     setIdea("");
     setSessionId(null);
     setPlan(null);
@@ -164,7 +185,14 @@ export default function IdeaPage() {
         </p>
       </div>
 
-      <IdeaInput value={idea} onChange={setIdea} onSubmit={handleGenerate} disabled={!!busy || !!plan} />
+      {reopening ? (
+        <div className="flex items-center justify-center gap-3 py-8">
+          <Spinner />
+          <span className="text-brand-text/70">Abriendo tu idea...</span>
+        </div>
+      ) : (
+        <IdeaInput value={idea} onChange={setIdea} onSubmit={handleGenerate} disabled={!!busy || !!plan} />
+      )}
 
       {error && <p className="text-sm text-brand-error">{error}</p>}
       {needsUpgrade && <UpgradePrompt />}

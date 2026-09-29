@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGuardedAction, useGuardedNavigation } from "../../../context/NavigationGuardContext";
 import AudioUploader from "../../../components/transcription/AudioUploader";
 import TranscriptionResult from "../../../components/transcription/TranscriptionResult";
@@ -15,12 +15,13 @@ import Button from "../../../components/ui/Button";
 import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import SocialSharePanel from "../../../components/social/SocialSharePanel";
-import { transcribe, analyzeInterview, updateTranscript } from "../../../services/transcriptions.service";
+import { transcribe, analyzeInterview, updateTranscript, getTranscription } from "../../../services/transcriptions.service";
 import { generateArticle } from "../../../services/articles.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
 import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
+import { useUrlParam, clearUrlParam } from "../../../hooks/useUrlParam";
 
 function firstSentence(text) {
   const sentence = (text || "").split(/(?<=[.!?])\s+/)[0];
@@ -52,6 +53,30 @@ export default function TranscriptionPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [savedToProject, setSavedToProject] = useState(false);
+
+  // /transcription?id=... reabre una transcripción guardada para redactar la nota
+  // sin volver a subir ni pagar el audio.
+  const reopenId = useUrlParam("id");
+  const [reopening, setReopening] = useState(false);
+
+  useEffect(() => {
+    if (!reopenId) return;
+    setReopening(true);
+    getTranscription(reopenId)
+      .then((saved) => {
+        setTranscription({
+          transcription_id: saved.transcription_id,
+          transcript: saved.transcript,
+          language: saved.language,
+          duration: saved.duration,
+        });
+        setTranscriptDraft(saved.transcript);
+        setInterviewAnalysis(saved.analysis);
+        setAngleChoice(buildAngleOptions(saved.analysis)[0].id);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setReopening(false));
+  }, [reopenId]);
 
   useUnsavedWarning(!!article && !savedToProject, handleSaveToProject);
 
@@ -163,6 +188,7 @@ export default function TranscriptionPage() {
   }
 
   function handleReset() {
+    clearUrlParam("id");
     setTranscription(null);
     setAnalyzing(false);
     setInterviewAnalysis(null);
@@ -184,7 +210,14 @@ export default function TranscriptionPage() {
         <p className="mt-1 text-sm text-brand-text/70">Transcribe tu entrevista y genera tu nota en segundos.</p>
       </div>
 
-      {!transcription && (
+      {reopening && (
+        <div className="flex items-center justify-center gap-3 py-8">
+          <Spinner />
+          <span className="text-brand-text/70">Abriendo tu transcripción...</span>
+        </div>
+      )}
+
+      {!transcription && !reopening && (
         <AudioUploader onSubmit={handleTranscribe} isFree={credits?.plan === "free"} disabled={transcribing} />
       )}
 

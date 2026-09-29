@@ -7,6 +7,7 @@ const {
   extractText,
   generateDocumentAnalysis,
   saveDocument,
+  getDocumentAnalysis,
   getDocumentForNote,
 } = require("./documents.service");
 const { generateNoteFromDocument } = require("../doc-to-note/doc-to-note.service");
@@ -81,6 +82,21 @@ router.post("/", requireCredits, upload.single("document"), async (req, res, nex
       results: saved.results,
       created_at: saved.created_at,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/:id", async (req, res, next) => {
+  try {
+    if (!UUID_PATTERN.test(req.params.id)) {
+      return res.status(404).json({ error: "No se encontró el documento." });
+    }
+    const document = await getDocumentAnalysis({ userId: req.user.id, documentId: req.params.id });
+    if (!document) {
+      return res.status(404).json({ error: "No se encontró el documento." });
+    }
+    res.json(document);
   } catch (err) {
     next(err);
   }

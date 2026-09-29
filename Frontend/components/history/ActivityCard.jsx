@@ -10,7 +10,7 @@ function truncateTitle(title) {
 }
 
 export default function ActivityCard({ item }) {
-  const meta = getItemTypeMeta(item.type);
+  const meta = getItemTypeMeta(item.type, item.article_type);
 
   return (
     <Link href="/history">

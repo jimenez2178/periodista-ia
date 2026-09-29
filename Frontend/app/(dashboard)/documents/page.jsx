@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGuardedAction, useGuardedNavigation } from "../../../context/NavigationGuardContext";
 import DocumentUploader from "../../../components/documents/DocumentUploader";
 import DocumentResults from "../../../components/documents/DocumentResults";
@@ -13,11 +13,12 @@ import Button from "../../../components/ui/Button";
 import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import SocialSharePanel from "../../../components/social/SocialSharePanel";
-import { analyzeDocument, generateNoteFromAnalysis } from "../../../services/documents.service";
+import { analyzeDocument, generateNoteFromAnalysis, getDocumentAnalysis } from "../../../services/documents.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
 import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
+import { useUrlParam, clearUrlParam } from "../../../hooks/useUrlParam";
 
 export default function DocumentsPage() {
   const navigate = useGuardedNavigation();
@@ -41,6 +42,24 @@ export default function DocumentsPage() {
   const [noteNeedsUpgrade, setNoteNeedsUpgrade] = useState(false);
   const [showNoteSaveModal, setShowNoteSaveModal] = useState(false);
   const [noteSavedToProject, setNoteSavedToProject] = useState(false);
+
+  // /documents?id=... reabre un análisis guardado (desde Proyectos o Historial).
+  const reopenId = useUrlParam("id");
+  // Los análisis viejos no guardaron el texto del documento: no se puede redactar desde ellos.
+  const canWriteNote = result?.can_write_note !== false;
+  const [reopening, setReopening] = useState(false);
+
+  useEffect(() => {
+    if (!reopenId) return;
+    setReopening(true);
+    getDocumentAnalysis(reopenId)
+      .then((document) => {
+        setResult(document);
+        setSavedToProject(!!document.project_id);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setReopening(false));
+  }, [reopenId]);
 
   // Antes de salir se guarda todo lo pendiente (análisis y nota) en el mismo proyecto.
   async function handleSaveAllToProject(projectId) {
@@ -130,6 +149,7 @@ export default function DocumentsPage() {
   }
 
   function handleReset() {
+    clearUrlParam("id");
     setResult(null);
     setSavedToProject(false);
     setNote(null);
@@ -150,7 +170,14 @@ export default function DocumentsPage() {
         </p>
       </div>
 
-      {!result && (
+      {reopening && (
+        <div className="flex items-center justify-center gap-3 py-8">
+          <Spinner />
+          <span className="text-brand-text/70">Abriendo tu análisis...</span>
+        </div>
+      )}
+
+      {!result && !reopening && (
         <DocumentUploader onSubmit={handleAnalyze} isFree={credits?.plan === "free"} disabled={loading} />
       )}
 
@@ -172,19 +199,26 @@ export default function DocumentsPage() {
             analysisTypes={result.analysis_types}
             results={result.results}
             onVerifyFinding={handleVerifyFinding}
-            onWriteStory={openNoteModal}
+            onWriteStory={canWriteNote ? openNoteModal : undefined}
             onInvestigateStory={handleInvestigateStory}
             actionsDisabled={noteGenerating}
           />
 
-          <div className="flex flex-col gap-3 rounded-brand border border-brand-blue/30 bg-brand-blue/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-brand-text">
-              <span className="font-semibold">¿Listo para escribir?</span> Redacta una nota basada en este documento.
+          {canWriteNote ? (
+            <div className="flex flex-col gap-3 rounded-brand border border-brand-blue/30 bg-brand-blue/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-brand-text">
+                <span className="font-semibold">¿Listo para escribir?</span> Redacta una nota basada en este documento.
+              </p>
+              <Button onClick={() => openNoteModal(null)} disabled={noteGenerating} className="w-full sm:w-auto">
+                📰 Redactar nota
+              </Button>
+            </div>
+          ) : (
+            <p className="rounded-brand bg-brand-yellow/10 px-3 py-2 text-sm text-brand-text/70">
+              Este análisis es anterior a la función de redactar notas y no guardó el texto del documento. Para
+              redactar una nota, vuelve a analizarlo.
             </p>
-            <Button onClick={() => openNoteModal(null)} disabled={noteGenerating} className="w-full sm:w-auto">
-              📰 Redactar nota
-            </Button>
-          </div>
+          )}
 
           {noteError && <p className="text-sm text-brand-error">{noteError}</p>}
           {noteNeedsUpgrade && <UpgradePrompt />}

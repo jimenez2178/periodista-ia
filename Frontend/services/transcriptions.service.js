@@ -70,3 +70,22 @@ export async function updateTranscript(transcriptionId, transcriptText) {
 
   return data;
 }
+
+export async function getTranscription(transcriptionId) {
+  const response = await fetch(`/api/proxy/transcriptions/${transcriptionId}`);
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const error = new Error(data?.error || "No pudimos abrir la transcripción.");
+    error.status = response.status;
+    throw error;
+  }
+
+  return data;
+}
