@@ -10,6 +10,7 @@ import ArticleResult from "../../../components/transcription/ArticleResult";
 import SocialSharePanel from "../../../components/social/SocialSharePanel";
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
+import ProgressWait from "../../../components/ui/ProgressWait";
 import Toast from "../../../components/ui/Toast";
 import Button from "../../../components/ui/Button";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
@@ -198,19 +199,25 @@ export default function IdeaPage() {
       {needsUpgrade && <UpgradePrompt />}
 
       {busy === "plan" && (
-        <div className="flex items-center justify-center gap-3 py-8">
-          <Spinner />
-          <span className="text-brand-text/70">Generando tu plan...</span>
-        </div>
+        <ProgressWait
+          expectedSeconds={30}
+          steps={[
+            "Analizando tu idea...",
+            "Formulando la hipótesis y los ángulos...",
+            "Identificando fuentes y documentos a pedir...",
+            "Ordenando los pasos de investigación...",
+            "Revisando riesgos y últimos detalles...",
+          ]}
+        />
       )}
 
       {plan && (
         <>
           {busy === "refine" ? (
-            <div className="flex items-center justify-center gap-3 py-8">
-              <Spinner />
-              <span className="text-brand-text/70">Ajustando tu plan...</span>
-            </div>
+            <ProgressWait
+              expectedSeconds={35}
+              steps={["Aplicando tu ajuste...", "Reenfocando fuentes y pasos...", "Actualizando el plan..."]}
+            />
           ) : (
             <InvestigationPlan
               plan={plan}
@@ -228,10 +235,7 @@ export default function IdeaPage() {
           <IdeaOutputs onGenerate={handleGenerateDraft} disabled={!!busy} />
 
           {busy === "draft" && (
-            <div className="flex items-center justify-center gap-3 py-8">
-              <Spinner />
-              <span className="text-brand-text/70">Redactando...</span>
-            </div>
+            <ProgressWait expectedSeconds={15} steps={["Leyendo tu plan...", "Redactando...", "Dando los últimos toques..."]} />
           )}
 
           {draft && busy !== "draft" && (
