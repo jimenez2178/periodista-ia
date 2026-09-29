@@ -35,9 +35,9 @@ const FEATURES = [
   },
   {
     href: "/interview",
-    emoji: "🎙️",
+    emoji: "🗣️",
     title: "Preparar entrevista",
-    description: "Recibe un kit completo de preguntas antes de tu próxima entrevista",
+    description: "Investiga al entrevistado y recibe un guion de preguntas para tu próxima entrevista",
   },
   {
     href: "/tools",

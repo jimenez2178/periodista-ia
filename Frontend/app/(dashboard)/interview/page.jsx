@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import InterviewForm from "../../../components/interview/InterviewForm";
 import InterviewResults from "../../../components/interview/InterviewResults";
@@ -13,14 +13,17 @@ import SaveToProjectModal from "../../../components/projects/SaveToProjectModal"
 import { createInterviewKit } from "../../../services/interview.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
+import { usePrefilledInput, setPrefilledInput } from "../../../hooks/usePrefilledInput";
 import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
+
+const EMPTY_FORM = { interviewee: "", topic: "", goal: "", interviewType: "a_fondo", research: true };
 
 export default function InterviewPage() {
   const router = useRouter();
   const { refreshCredits } = useCredits();
+  const prefilledInterviewee = usePrefilledInput("interview");
 
-  const [interviewee, setInterviewee] = useState("");
-  const [topic, setTopic] = useState("");
+  const [form, setForm] = useState(EMPTY_FORM);
   const [preparing, setPreparing] = useState(false);
   const [interview, setInterview] = useState(null);
   const [error, setError] = useState("");
@@ -31,10 +34,19 @@ export default function InterviewPage() {
 
   useUnsavedWarning(!!interview && !savedToProject, () => setShowSaveModal(true));
 
+  useEffect(() => {
+    if (prefilledInterviewee) setForm((current) => ({ ...current, interviewee: prefilledInterviewee }));
+  }, [prefilledInterviewee]);
+
   async function handleSaveToProject(projectId) {
     await addItemToProject({ projectId, type: "interview", itemId: interview.id });
     setSavedToProject(true);
     setToastMessage("Guardado en el proyecto.");
+  }
+
+  function handleVerifyFact(fact) {
+    setPrefilledInput("verification", fact);
+    router.push("/verification");
   }
 
   async function handlePrepare() {
@@ -43,7 +55,13 @@ export default function InterviewPage() {
     setNeedsUpgrade(false);
 
     try {
-      const data = await createInterviewKit({ interviewee: interviewee.trim(), topic: topic.trim() });
+      const data = await createInterviewKit({
+        interviewee: form.interviewee.trim(),
+        topic: form.topic.trim(),
+        goal: form.goal.trim(),
+        interviewType: form.interviewType,
+        research: form.research,
+      });
       setInterview(data);
       refreshCredits();
     } catch (err) {
@@ -58,8 +76,7 @@ export default function InterviewPage() {
   }
 
   function handleReset() {
-    setInterviewee("");
-    setTopic("");
+    setForm(EMPTY_FORM);
     setInterview(null);
     setSavedToProject(false);
     setError("");
@@ -69,22 +86,13 @@ export default function InterviewPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-brand-text">🎙️ Preparar entrevista</h1>
+        <h1 className="text-2xl font-bold text-brand-text">🗣️ Preparar entrevista</h1>
         <p className="mt-1 text-sm text-brand-text/70">
           Recibe un kit completo de preguntas antes de tu próxima entrevista.
         </p>
       </div>
 
-      {!interview && (
-        <InterviewForm
-          interviewee={interviewee}
-          topic={topic}
-          onIntervieweeChange={setInterviewee}
-          onTopicChange={setTopic}
-          onSubmit={handlePrepare}
-          disabled={preparing}
-        />
-      )}
+      {!interview && <InterviewForm values={form} onChange={setForm} onSubmit={handlePrepare} disabled={preparing} />}
 
       {error && <p className="text-sm text-brand-error">{error}</p>}
       {needsUpgrade && <UpgradePrompt />}
@@ -92,26 +100,35 @@ export default function InterviewPage() {
       {preparing && (
         <div className="flex items-center justify-center gap-3 py-8">
           <Spinner />
-          <span className="text-brand-text/70">Preparando tus preguntas...</span>
+          <span className="text-brand-text/70">
+            {form.research
+              ? "Investigando al entrevistado y preparando tus preguntas... puede tardar hasta un minuto."
+              : "Preparando tus preguntas..."}
+          </span>
         </div>
       )}
 
       {interview && !preparing && (
         <>
-          <InterviewResults results={interview.results} />
+          <div>
+            <h2 className="text-lg font-bold text-brand-text">Entrevista a {interview.interviewee}</h2>
+            <p className="text-sm text-brand-text/70">{interview.topic}</p>
+          </div>
+          <InterviewResults
+            interviewee={interview.interviewee}
+            topic={interview.topic}
+            results={interview.results}
+            onVerifyFact={handleVerifyFact}
+          />
           <NextStepsPanel
             actions={[
-              { emoji: "🎙️", label: "Transcribir esta entrevista", onClick: () => router.push("/transcription") },
-              { emoji: "🔍", label: "Verificar información", onClick: () => router.push("/verification") },
+              { emoji: "🎙️", label: "Ya la hice: transcribir la entrevista", onClick: () => router.push("/transcription") },
               { emoji: "💾", label: "Guardar en proyecto", onClick: () => setShowSaveModal(true) },
             ]}
           />
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
               Nueva entrevista
-            </Button>
-            <Button onClick={() => setShowSaveModal(true)} className="w-full sm:w-auto">
-              Guardar en proyecto →
             </Button>
           </div>
         </>

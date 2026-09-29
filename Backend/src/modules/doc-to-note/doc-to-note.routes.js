@@ -6,7 +6,6 @@ const { extractText } = require("../documents/documents.service");
 const { generateNoteFromDocument } = require("./doc-to-note.service");
 const { ARTICLE_TYPE_BY_FORMAT, VALID_FORMATS } = require("./doc-to-note.prompts");
 const { saveArticle } = require("../articles/articles.service");
-const { attachItemToProject } = require("../projects/projects.service");
 
 const MAX_DOCUMENT_BYTES = 15 * 1024 * 1024;
 const FREE_PLAN_MAX_BYTES = 500 * 1024;
@@ -14,6 +13,7 @@ const FREE_PLAN_MAX_PAGES = 5;
 
 const SUPPORTED_FILE_TYPES = ["pdf", "docx", "txt"];
 const MAX_FIELD_LENGTH = 200;
+const MAX_ANGLE_LENGTH = 1000;
 const MAX_PASTED_TEXT_LENGTH = 5000;
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_DOCUMENT_BYTES } });
@@ -21,7 +21,7 @@ const router = express.Router();
 
 router.post("/", requireCredits, upload.single("document"), async (req, res, next) => {
   try {
-    const { format, tone, length, text: pastedText } = req.body;
+    const { format, tone, length, angle, text: pastedText } = req.body;
     const organizationName = req.body.organization_name;
 
     if (req.file && pastedText) {
@@ -45,6 +45,10 @@ router.post("/", requireCredits, upload.single("document"), async (req, res, nex
 
     if (typeof length !== "string" || !length.trim() || length.length > MAX_FIELD_LENGTH) {
       return res.status(400).json({ error: "Selecciona una extensión válida." });
+    }
+
+    if (angle != null && (typeof angle !== "string" || angle.length > MAX_ANGLE_LENGTH)) {
+      return res.status(400).json({ error: `El enfoque no puede superar ${MAX_ANGLE_LENGTH} caracteres.` });
     }
 
     let text;
@@ -78,43 +82,27 @@ router.post("/", requireCredits, upload.single("document"), async (req, res, nex
       text = pastedText.trim();
     }
 
-    const article = await generateNoteFromDocument({ text, format, tone, length, organizationName });
+    const article = await generateNoteFromDocument({
+      text,
+      format,
+      tone,
+      length,
+      organizationName,
+      angle: (angle || "").trim(),
+    });
     await incrementUsedCredits(req.credits);
 
-    res.json({ title: article.title, body: article.body, format, tone });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post("/save", async (req, res, next) => {
-  try {
-    const { title, body, format, organization_name: organizationName, project_id: projectId } = req.body;
-
-    if (typeof title !== "string" || typeof body !== "string" || !title.trim() || !body.trim()) {
-      return res.status(400).json({ error: "Faltan 'title' y 'body'." });
-    }
-    if (typeof projectId !== "string" || !projectId) {
-      return res.status(400).json({ error: "Falta 'project_id'." });
-    }
-
+    // Se guarda al generarse (como en las demás funciones): así aparece en el
+    // historial, las ediciones se autoguardan y "Guardar en proyecto" solo la vincula.
     const saved = await saveArticle({
       userId: req.user.id,
-      transcriptionId: null,
-      type: ARTICLE_TYPE_BY_FORMAT[format] || "news_article",
+      type: ARTICLE_TYPE_BY_FORMAT[format],
       organizationName,
-      article: { title, body },
+      article,
       language: null,
     });
 
-    const attached = await attachItemToProject({
-      userId: req.user.id,
-      projectId,
-      type: "article",
-      itemId: saved.id,
-    });
-
-    res.status(201).json(attached);
+    res.json({ ...saved, format, tone });
   } catch (err) {
     next(err);
   }

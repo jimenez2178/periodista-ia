@@ -1,12 +1,11 @@
 const { z } = require("zod");
 const { zodOutputFormat } = require("@anthropic-ai/sdk/helpers/zod");
-const anthropic = require("../../config/anthropic");
 const { supabaseAdmin } = require("../../config/supabase");
+const { parseWithWebSearch, keepOnlySearchedUrl } = require("../../utils/webSearch");
 
 // Pocas búsquedas por verificación: cada una suma segundos y la petición debe
 // responder antes del timeout del proxy (~60 s).
 const MAX_WEB_SEARCHES = 3;
-const MAX_PAUSE_CONTINUATIONS = 2;
 
 function buildSystemPrompt({ country, languageVariant }) {
   const countryNote = country
@@ -70,65 +69,24 @@ function buildUserContent({ claim, context }) {
   return `Afirmación a verificar:\n${claim}\n\nContexto del periodista:\n${context}`;
 }
 
-function normalizeUrl(url) {
-  return url.trim().replace(/\/+$/, "").toLowerCase();
-}
-
-// Enlaces que la búsqueda devolvió de verdad. Un error de la herramienta llega como
-// objeto (no como lista) dentro de un 200, así que solo leemos las listas.
-function collectSearchResultUrls(content) {
-  const urls = new Set();
-  for (const block of content) {
-    if (block.type !== "web_search_tool_result" || !Array.isArray(block.content)) continue;
-    for (const result of block.content) {
-      if (result.url) urls.add(normalizeUrl(result.url));
-    }
-  }
-  return urls;
-}
-
 async function generateVerification({ claim, context, country, languageVariant }) {
-  // La versión básica (sin filtrado dinámico) llega al mismo veredicto en ~30 s;
-  // web_search_20260209 tardaba 60-130 s por verificación. No usamos user_location:
-  // la API rechaza varios países de nuestros usuarios (ej. "DO"); el país va en el prompt.
-  const webSearchTool = { type: "web_search_20250305", name: "web_search", max_uses: MAX_WEB_SEARCHES };
+  const { parsed: result, searchUrls } = await parseWithWebSearch({
+    maxSearches: MAX_WEB_SEARCHES,
+    model: "claude-sonnet-5",
+    max_tokens: 8192,
+    output_config: {
+      effort: "medium",
+      format: zodOutputFormat(VerificationResultSchema),
+    },
+    system: buildSystemPrompt({ country, languageVariant }),
+    messages: [{ role: "user", content: buildUserContent({ claim, context }) }],
+  });
 
-  const messages = [{ role: "user", content: buildUserContent({ claim, context }) }];
-  const allContent = [];
-  let response;
-
-  for (let attempt = 0; attempt <= MAX_PAUSE_CONTINUATIONS; attempt++) {
-    response = await anthropic.messages.parse({
-      model: "claude-sonnet-5",
-      max_tokens: 8192,
-      output_config: {
-        effort: "medium",
-        format: zodOutputFormat(VerificationResultSchema),
-      },
-      tools: [webSearchTool],
-      system: buildSystemPrompt({ country, languageVariant }),
-      messages,
-    });
-    allContent.push(...response.content);
-
-    // El bucle de búsqueda del servidor puede pausar el turno; se reanuda
-    // devolviendo el turno del asistente tal cual, sin mensaje extra.
-    if (response.stop_reason !== "pause_turn") break;
-    messages.push({ role: "assistant", content: response.content });
-  }
-
-  const result = response.parsed_output;
   if (!result) {
     throw new Error("No pudimos completar la verificación. Intenta de nuevo.");
   }
 
-  // Red de seguridad: si la IA pone una URL que no vino de la búsqueda, la quitamos
-  // (se mantiene el nombre de la fuente, sin enlace).
-  const searchUrls = collectSearchResultUrls(allContent);
-  result.sources_used = result.sources_used.map((source) =>
-    source.url && !searchUrls.has(normalizeUrl(source.url)) ? { ...source, url: null } : source
-  );
-
+  result.sources_used = result.sources_used.map((source) => keepOnlySearchedUrl(source, searchUrls));
   return result;
 }
 

@@ -5,23 +5,34 @@ import { FileText } from "lucide-react";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
 import RadioGroup from "../ui/RadioGroup";
+import {
+  FORMAT_OPTIONS,
+  LENGTH_OPTIONS,
+  NEWS_FORMAT,
+  PRESS_RELEASE_FORMAT,
+  TONE_OPTIONS_BY_FORMAT,
+} from "../../utils/noteOptions";
 
 const ACCEPTED_TYPES = ".pdf,.docx,.txt";
 
 const INPUT_MODE_OPTIONS = ["📄 Subir archivo", "✏️ Pegar texto"];
-const FORMAT_OPTIONS = ["📰 Nota periodística", "📋 Comunicado de prensa"];
-const TONE_OPTIONS = ["Informativo", "Institucional", "Ejecutivo"];
-const LENGTH_OPTIONS = ["Breve (1-2 párrafos)", "Completa"];
 const MAX_PASTED_TEXT_LENGTH = 5000;
+const MAX_ANGLE_LENGTH = 1000;
 
-export default function DocToNoteForm({ onSubmit, isFree, disabled }) {
+export default function DocToNoteForm({ onSubmit, isFree, disabled, submitLabel = "Generar nota" }) {
   const [inputMode, setInputMode] = useState(INPUT_MODE_OPTIONS[0]);
   const [file, setFile] = useState(null);
   const [text, setText] = useState("");
-  const [format, setFormat] = useState("");
+  const [format, setFormat] = useState(NEWS_FORMAT);
   const [organizationName, setOrganizationName] = useState("");
-  const [tone, setTone] = useState("Informativo");
-  const [length, setLength] = useState("Completa");
+  const [tone, setTone] = useState(TONE_OPTIONS_BY_FORMAT[NEWS_FORMAT][0]);
+  const [length, setLength] = useState(LENGTH_OPTIONS[1]);
+  const [angle, setAngle] = useState("");
+
+  function handleFormatChange(value) {
+    setFormat(value);
+    setTone(TONE_OPTIONS_BY_FORMAT[value][0]);
+  }
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef(null);
 
@@ -52,14 +63,16 @@ export default function DocToNoteForm({ onSubmit, isFree, disabled }) {
       file: inputMode === INPUT_MODE_OPTIONS[0] ? file : undefined,
       text: inputMode === INPUT_MODE_OPTIONS[1] ? text.trim() : undefined,
       format,
-      organizationName: format === "📋 Comunicado de prensa" ? organizationName : undefined,
+      organizationName: format === PRESS_RELEASE_FORMAT ? organizationName.trim() : undefined,
       tone,
       length,
+      angle: angle.trim() || undefined,
     });
   }
 
   const hasValidInput = inputMode === INPUT_MODE_OPTIONS[0] ? !!file : !!text.trim();
-  const canSubmit = !disabled && hasValidInput && !!format;
+  const hasOrganization = format !== PRESS_RELEASE_FORMAT || !!organizationName.trim();
+  const canSubmit = !disabled && hasValidInput && hasOrganization;
 
   return (
     <div className="flex flex-col gap-4">
@@ -109,10 +122,10 @@ export default function DocToNoteForm({ onSubmit, isFree, disabled }) {
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-brand-text">Formato de salida</span>
-        <RadioGroup name="format" options={FORMAT_OPTIONS} value={format} onChange={setFormat} />
+        <RadioGroup name="format" options={FORMAT_OPTIONS} value={format} onChange={handleFormatChange} />
       </div>
 
-      {format === "📋 Comunicado de prensa" && (
+      {format === PRESS_RELEASE_FORMAT && (
         <Input
           id="organization_name"
           label="Nombre de la organización"
@@ -123,12 +136,28 @@ export default function DocToNoteForm({ onSubmit, isFree, disabled }) {
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-brand-text">Tono</span>
-        <RadioGroup name="tone" options={TONE_OPTIONS} value={tone} onChange={setTone} />
+        <RadioGroup name="tone" options={TONE_OPTIONS_BY_FORMAT[format]} value={tone} onChange={setTone} />
       </div>
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-brand-text">Extensión</span>
         <RadioGroup name="length" options={LENGTH_OPTIONS} value={length} onChange={setLength} />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label htmlFor="doc_note_angle" className="text-sm font-medium text-brand-text">
+          🎯 ¿En qué quieres enfocar la nota? <span className="font-normal text-brand-text/50">(opcional)</span>
+        </label>
+        <textarea
+          id="doc_note_angle"
+          value={angle}
+          onChange={(e) => setAngle(e.target.value)}
+          maxLength={MAX_ANGLE_LENGTH}
+          rows={2}
+          placeholder="Ej: El recorte al presupuesto de salud en las provincias del sur"
+          className="rounded-brand border border-brand-border px-4 py-3 text-sm text-brand-text outline-none focus:border-brand-blue"
+        />
+        <p className="text-xs text-brand-text/50">Si lo dejas vacío, la nota se enfocará en lo más relevante.</p>
       </div>
 
       {isFree && inputMode === INPUT_MODE_OPTIONS[0] && (
@@ -138,7 +167,7 @@ export default function DocToNoteForm({ onSubmit, isFree, disabled }) {
       )}
 
       <Button onClick={handleSubmit} disabled={!canSubmit}>
-        Generar nota
+        {submitLabel}
       </Button>
     </div>
   );

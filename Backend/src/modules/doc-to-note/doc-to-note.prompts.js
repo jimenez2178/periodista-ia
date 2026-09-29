@@ -12,9 +12,14 @@ para un comunicado oficial, y una sección final de boilerplate con los datos de
 organización si el documento los provee (o una línea de cierre genérica si no).`;
 }
 
+// Nota periodística: Informativo / Interpretativo. Comunicado: Institucional / Cercano.
+// "Ejecutivo" se mantiene solo para peticiones de clientes anteriores.
 const TONE_LINES = {
   Informativo: "Usa un tono informativo y neutral.",
+  Interpretativo:
+    "Usa un tono interpretativo: además de los hechos, explica su contexto, causas y posibles consecuencias, siempre apoyado en el documento y sin opinar.",
   Institucional: "Usa un tono institucional y corporativo.",
+  Cercano: "Usa un tono institucional pero cercano, claro y sin tecnicismos innecesarios.",
   Ejecutivo: "Usa un tono ejecutivo, directo y orientado a resultados.",
 };
 

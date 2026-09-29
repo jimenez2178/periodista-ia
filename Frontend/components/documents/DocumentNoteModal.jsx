@@ -5,21 +5,29 @@ import Modal from "../ui/Modal";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
 import RadioGroup from "../ui/RadioGroup";
-
-const FORMAT_OPTIONS = ["📰 Nota periodística", "📋 Comunicado de prensa"];
-const TONE_OPTIONS = ["Informativo", "Institucional", "Ejecutivo"];
-const LENGTH_OPTIONS = ["Breve (1-2 párrafos)", "Completa"];
+import {
+  FORMAT_OPTIONS,
+  LENGTH_OPTIONS,
+  NEWS_FORMAT,
+  PRESS_RELEASE_FORMAT,
+  TONE_OPTIONS_BY_FORMAT,
+} from "../../utils/noteOptions";
 
 // `story` es la historia sugerida por el análisis en la que se enfoca la nota;
 // sin ella, la nota se redacta sobre lo más relevante del documento.
 export default function DocumentNoteModal({ open, story, onClose, onSubmit, loading }) {
-  const [format, setFormat] = useState(FORMAT_OPTIONS[0]);
+  const [format, setFormat] = useState(NEWS_FORMAT);
   const [organizationName, setOrganizationName] = useState("");
-  const [tone, setTone] = useState(TONE_OPTIONS[0]);
+  const [tone, setTone] = useState(TONE_OPTIONS_BY_FORMAT[NEWS_FORMAT][0]);
   const [length, setLength] = useState(LENGTH_OPTIONS[1]);
 
-  const isPressRelease = format === FORMAT_OPTIONS[1];
+  const isPressRelease = format === PRESS_RELEASE_FORMAT;
   const canSubmit = !loading && (!isPressRelease || organizationName.trim());
+
+  function handleFormatChange(value) {
+    setFormat(value);
+    setTone(TONE_OPTIONS_BY_FORMAT[value][0]);
+  }
 
   function handleSubmit() {
     if (!canSubmit) return;
@@ -48,7 +56,12 @@ export default function DocumentNoteModal({ open, story, onClose, onSubmit, load
 
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-brand-text">Formato</p>
-          <RadioGroup name="document_note_format" options={FORMAT_OPTIONS} value={format} onChange={setFormat} />
+          <RadioGroup
+            name="document_note_format"
+            options={FORMAT_OPTIONS}
+            value={format}
+            onChange={handleFormatChange}
+          />
         </div>
 
         {isPressRelease && (
@@ -62,7 +75,12 @@ export default function DocumentNoteModal({ open, story, onClose, onSubmit, load
 
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-brand-text">Tono</p>
-          <RadioGroup name="document_note_tone" options={TONE_OPTIONS} value={tone} onChange={setTone} />
+          <RadioGroup
+            name="document_note_tone"
+            options={TONE_OPTIONS_BY_FORMAT[format]}
+            value={tone}
+            onChange={setTone}
+          />
         </div>
 
         <div className="flex flex-col gap-2">

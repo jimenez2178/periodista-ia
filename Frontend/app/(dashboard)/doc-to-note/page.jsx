@@ -8,7 +8,7 @@ import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
-import { generateNoteFromDocument, saveNoteToProject } from "../../../services/doc-to-note.service";
+import { generateNoteFromDocument } from "../../../services/doc-to-note.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
@@ -25,7 +25,10 @@ export default function DocToNotePage() {
 
   const [generating, setGenerating] = useState(false);
   const [article, setArticle] = useState(null);
-  const [meta, setMeta] = useState(null);
+  // El formulario sigue montado (oculto) mientras se ve la nota, para poder
+  // generar otra versión sin volver a subir el documento ni elegir las opciones.
+  const [showForm, setShowForm] = useState(true);
+  const [formKey, setFormKey] = useState(0);
   const [error, setError] = useState("");
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -34,15 +37,16 @@ export default function DocToNotePage() {
 
   useUnsavedWarning(!!article && !savedToProject, () => setShowSaveModal(true));
 
-  async function handleGenerate({ file, text, format, organizationName, tone, length }) {
+  async function handleGenerate(options) {
     setGenerating(true);
     setError("");
     setNeedsUpgrade(false);
 
     try {
-      const data = await generateNoteFromDocument({ file, text, format, organizationName, tone, length });
-      setArticle({ title: data.title, body: data.body });
-      setMeta({ format: data.format, organizationName });
+      const data = await generateNoteFromDocument(options);
+      setArticle(data);
+      setSavedToProject(false);
+      setShowForm(false);
       refreshCredits();
     } catch (err) {
       if (err.status === 402) {
@@ -57,20 +61,7 @@ export default function DocToNotePage() {
   }
 
   async function handleSaveToProject(projectId) {
-    if (article.id) {
-      await addItemToProject({ projectId, type: "article", itemId: article.id });
-    } else {
-      // Con el id, las ediciones siguientes se autoguardan y un segundo
-      // guardado mueve la misma nota en vez de crear un duplicado.
-      const saved = await saveNoteToProject({
-        title: article.title,
-        body: article.body,
-        format: meta.format,
-        organizationName: meta.organizationName,
-        projectId,
-      });
-      setArticle((current) => ({ ...current, id: saved.id }));
-    }
+    await addItemToProject({ projectId, type: "article", itemId: article.id });
     setSavedToProject(true);
     setToastMessage("Guardado en el proyecto.");
   }
@@ -82,8 +73,9 @@ export default function DocToNotePage() {
 
   function handleReset() {
     setArticle(null);
-    setMeta(null);
     setSavedToProject(false);
+    setShowForm(true);
+    setFormKey((key) => key + 1);
     setError("");
     setNeedsUpgrade(false);
   }
@@ -97,9 +89,15 @@ export default function DocToNotePage() {
         </p>
       </div>
 
-      {!article && !generating && (
-        <DocToNoteForm onSubmit={handleGenerate} isFree={credits?.plan === "free"} disabled={generating} />
-      )}
+      <div className={showForm && !generating ? "" : "hidden"}>
+        <DocToNoteForm
+          key={formKey}
+          onSubmit={handleGenerate}
+          isFree={credits?.plan === "free"}
+          disabled={generating}
+          submitLabel={article ? "Generar otra versión" : "Generar nota"}
+        />
+      </div>
 
       {error && <p className="text-sm text-brand-error">{error}</p>}
       {needsUpgrade && <UpgradePrompt />}
@@ -112,13 +110,21 @@ export default function DocToNotePage() {
       )}
 
       {article && !generating && (
-        <DocToNoteResult
-          article={article}
-          onArticleChange={setArticle}
-          onVerify={handleVerify}
-          onSaveToProject={() => setShowSaveModal(true)}
-          onReset={handleReset}
-        />
+        <>
+          {showForm && (
+            <p className="text-sm text-brand-text/60">
+              Esta es tu versión actual. Cambia las opciones de arriba para generar otra.
+            </p>
+          )}
+          <DocToNoteResult
+            article={article}
+            onArticleChange={setArticle}
+            onVerify={handleVerify}
+            onSaveToProject={() => setShowSaveModal(true)}
+            onRegenerate={showForm ? undefined : () => setShowForm(true)}
+            onReset={handleReset}
+          />
+        </>
       )}
 
       <SaveToProjectModal

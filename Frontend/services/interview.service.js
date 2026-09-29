@@ -1,8 +1,8 @@
-export async function createInterviewKit({ interviewee, topic }) {
+export async function createInterviewKit({ interviewee, topic, goal, interviewType, research }) {
   const response = await fetch("/api/proxy/interviews", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ interviewee, topic }),
+    body: JSON.stringify({ interviewee, topic, goal, interview_type: interviewType, research }),
   });
 
   let data = null;
