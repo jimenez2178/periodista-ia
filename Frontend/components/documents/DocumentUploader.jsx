@@ -7,10 +7,12 @@ import Checkbox from "../ui/Checkbox";
 import { ANALYSIS_TYPES } from "../../utils/documentAnalysisTypes";
 
 const ACCEPTED_TYPES = ".pdf,.docx,.xlsx,.csv";
+// Lo que casi siempre se quiere de un documento; el periodista puede ajustar.
+const DEFAULT_TYPES = ["executive_summary", "key_data_points", "story_angles"];
 
 export default function DocumentUploader({ onSubmit, isFree, disabled }) {
   const [file, setFile] = useState(null);
-  const [selectedTypes, setSelectedTypes] = useState([]);
+  const [selectedTypes, setSelectedTypes] = useState(DEFAULT_TYPES);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef(null);
 

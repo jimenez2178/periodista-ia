@@ -4,6 +4,7 @@ const requireCredits = require("../../middleware/credits");
 const { incrementUsedCredits } = require("../credits/credits.service");
 const { extractText } = require("../documents/documents.service");
 const { generateNoteFromDocument } = require("./doc-to-note.service");
+const { ARTICLE_TYPE_BY_FORMAT, VALID_FORMATS } = require("./doc-to-note.prompts");
 const { saveArticle } = require("../articles/articles.service");
 const { attachItemToProject } = require("../projects/projects.service");
 
@@ -11,17 +12,9 @@ const MAX_DOCUMENT_BYTES = 15 * 1024 * 1024;
 const FREE_PLAN_MAX_BYTES = 500 * 1024;
 const FREE_PLAN_MAX_PAGES = 5;
 
-const VALID_FORMATS = ["📰 Nota periodística", "📋 Comunicado de prensa"];
 const SUPPORTED_FILE_TYPES = ["pdf", "docx", "txt"];
 const MAX_FIELD_LENGTH = 200;
 const MAX_PASTED_TEXT_LENGTH = 5000;
-
-// La tabla `articles` restringe `type` a estos dos slugs (mismo check constraint
-// que usa el módulo `articles`); el formulario maneja las etiquetas con emoji.
-const ARTICLE_TYPE_BY_FORMAT = {
-  "📰 Nota periodística": "news_article",
-  "📋 Comunicado de prensa": "press_release",
-};
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_DOCUMENT_BYTES } });
 const router = express.Router();

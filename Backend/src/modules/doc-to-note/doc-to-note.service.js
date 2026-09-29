@@ -8,7 +8,9 @@ const ArticleSchema = z.object({
   body: z.string(),
 });
 
-async function generateNoteFromDocument({ text, format, tone, length, organizationName }) {
+async function generateNoteFromDocument({ text, format, tone, length, organizationName, angle }) {
+  const content = angle ? `Historia a desarrollar:\n${angle}\n\nDocumento:\n${text}` : text;
+
   const response = await anthropic.messages.parse({
     model: "claude-sonnet-5",
     max_tokens: 4096,
@@ -16,8 +18,8 @@ async function generateNoteFromDocument({ text, format, tone, length, organizati
       effort: "medium",
       format: zodOutputFormat(ArticleSchema),
     },
-    system: buildSystemPrompt({ format, tone, length, organizationName }),
-    messages: [{ role: "user", content: text }],
+    system: buildSystemPrompt({ format, tone, length, organizationName, hasAngle: !!angle }),
+    messages: [{ role: "user", content }],
   });
 
   return response.parsed_output;

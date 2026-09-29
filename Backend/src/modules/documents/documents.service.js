@@ -73,6 +73,8 @@ Responde ÚNICAMENTE con las claves solicitadas a continuación, basándote en h
 concretos presentes en el texto (cifras, nombres, fechas reales) — no inventes ni
 generalices. Si no encuentras nada relevante para una clave, devuelve un array vacío
 (o un texto indicándolo para el resumen ejecutivo) en vez de fabricar contenido.
+En cada hallazgo, indica entre paréntesis dónde está en el documento cuando se pueda
+identificar (página, sección, hoja o fila), para que el periodista pueda comprobarlo.
 Responde siempre en español.
 
 Tipos de análisis solicitados:
@@ -136,7 +138,7 @@ async function extractText(buffer, originalname) {
   });
 }
 
-async function saveDocument({ userId, fileName, fileType, fileSizeBytes, analysisTypes, results }) {
+async function saveDocument({ userId, fileName, fileType, fileSizeBytes, analysisTypes, results, extractedText }) {
   const { data, error } = await supabaseAdmin
     .from("documents")
     .insert({
@@ -146,9 +148,23 @@ async function saveDocument({ userId, fileName, fileType, fileSizeBytes, analysi
       file_size_bytes: fileSizeBytes,
       analysis_types: analysisTypes,
       results,
+      // Se guarda para poder redactar una nota desde el análisis sin volver a subir el archivo.
+      extracted_text: extractedText,
     })
-    .select()
+    .select("id, file_name, file_type, analysis_types, results, created_at")
     .single();
+
+  if (error) throw error;
+  return data;
+}
+
+async function getDocumentForNote({ userId, documentId }) {
+  const { data, error } = await supabaseAdmin
+    .from("documents")
+    .select("id, extracted_text, project_id")
+    .eq("id", documentId)
+    .eq("user_id", userId)
+    .maybeSingle();
 
   if (error) throw error;
   return data;
@@ -160,4 +176,5 @@ module.exports = {
   extractText,
   generateDocumentAnalysis,
   saveDocument,
+  getDocumentForNote,
 };

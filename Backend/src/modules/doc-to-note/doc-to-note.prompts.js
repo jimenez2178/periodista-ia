@@ -23,7 +23,18 @@ const LENGTH_LINES = {
   Completa: "Desarrolla la nota de forma completa, con varios párrafos bien estructurados.",
 };
 
-function buildSystemPrompt({ format, tone, length, organizationName }) {
+const ANGLE_LINE = `El periodista indica la historia que quiere desarrollar a partir del documento: enfoca
+la nota en ella (título y lead incluidos) y usa del documento solo lo que la sustenta.`;
+
+// La tabla `articles` restringe `type` a estos dos slugs; los formularios manejan
+// las etiquetas con emoji.
+const ARTICLE_TYPE_BY_FORMAT = {
+  "📰 Nota periodística": "news_article",
+  "📋 Comunicado de prensa": "press_release",
+};
+const VALID_FORMATS = Object.keys(ARTICLE_TYPE_BY_FORMAT);
+
+function buildSystemPrompt({ format, tone, length, organizationName, hasAngle = false }) {
   const base =
     format === "📋 Comunicado de prensa" ? buildPressReleaseBase(organizationName) : NEWS_ARTICLE_BASE;
   const toneLine = TONE_LINES[tone] || "";
@@ -32,8 +43,9 @@ function buildSystemPrompt({ format, tone, length, organizationName }) {
   return `${base}
 ${toneLine}
 ${lengthLine}
+${hasAngle ? ANGLE_LINE : ""}
 No inventes información que no esté en el documento.
 Responde siempre en el mismo idioma del documento.`;
 }
 
-module.exports = { buildSystemPrompt };
+module.exports = { buildSystemPrompt, ARTICLE_TYPE_BY_FORMAT, VALID_FORMATS };

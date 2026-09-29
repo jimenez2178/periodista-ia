@@ -2,11 +2,23 @@ import Card from "../ui/Card";
 import Button from "../ui/Button";
 import { ANALYSIS_TYPES } from "../../utils/documentAnalysisTypes";
 
+// Hallazgos que son afirmaciones verificables (cifras, montos, fechas, contradicciones).
+const VERIFIABLE_SLUGS = ["key_data_points", "budget_and_finances", "dates_and_timeline", "contradictions"];
+
 function findMeta(slug) {
   return ANALYSIS_TYPES.find((t) => t.slug === slug) || { emoji: "📄", label: slug };
 }
 
-export default function DocumentResults({ analysisTypes, results, onReset, onSaveToProject }) {
+export default function DocumentResults({
+  analysisTypes,
+  results,
+  onReset,
+  onSaveToProject,
+  onVerifyFinding,
+  onWriteStory,
+  onInvestigateStory,
+  actionsDisabled,
+}) {
   return (
     <div className="flex flex-col gap-4">
       {(analysisTypes || []).map((slug) => {
@@ -37,9 +49,27 @@ export default function DocumentResults({ analysisTypes, results, onReset, onSav
               ) : (
                 <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {stories.map((story, index) => (
-                    <Card key={index} variant="elevated" className="flex flex-col gap-1">
+                    <Card key={index} variant="elevated" className="flex flex-col gap-2">
                       <h4 className="font-bold text-brand-text">{story.title}</h4>
-                      <p className="text-sm text-brand-text/70">{story.description}</p>
+                      <p className="flex-1 text-sm text-brand-text/70">{story.description}</p>
+                      {(onWriteStory || onInvestigateStory) && (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {onWriteStory && (
+                            <Button onClick={() => onWriteStory(story)} disabled={actionsDisabled}>
+                              📰 Redactar nota
+                            </Button>
+                          )}
+                          {onInvestigateStory && (
+                            <Button
+                              variant="secondary"
+                              onClick={() => onInvestigateStory(story)}
+                              disabled={actionsDisabled}
+                            >
+                              💡 Investigar
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </Card>
                   ))}
                 </div>
@@ -49,6 +79,7 @@ export default function DocumentResults({ analysisTypes, results, onReset, onSav
         }
 
         const findings = results[slug] || [];
+        const canVerify = onVerifyFinding && VERIFIABLE_SLUGS.includes(slug);
         return (
           <details key={slug} open className="rounded-brand border border-brand-border bg-white p-4">
             <summary className="cursor-pointer text-base font-semibold text-brand-text">
@@ -59,7 +90,19 @@ export default function DocumentResults({ analysisTypes, results, onReset, onSav
             ) : (
               <ul className="mt-3 flex list-disc flex-col gap-2 pl-5 text-sm text-brand-text/80">
                 {findings.map((item, index) => (
-                  <li key={index}>{item}</li>
+                  <li key={index}>
+                    {item}
+                    {canVerify && (
+                      <button
+                        type="button"
+                        onClick={() => onVerifyFinding(item)}
+                        disabled={actionsDisabled}
+                        className="ml-2 whitespace-nowrap text-xs font-medium text-brand-blue hover:underline disabled:opacity-50"
+                      >
+                        🔍 Verificar
+                      </button>
+                    )}
+                  </li>
                 ))}
               </ul>
             )}

@@ -19,6 +19,7 @@ import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
 export default function VerificationPage() {
   const router = useRouter();
   const [claim, setClaim] = useState("");
+  const [context, setContext] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -52,7 +53,7 @@ export default function VerificationPage() {
     setNeedsUpgrade(false);
 
     try {
-      const data = await verifyClaim(claim.trim());
+      const data = await verifyClaim(claim.trim(), context.trim());
       setResult(data);
       refreshCredits();
     } catch (err) {
@@ -68,6 +69,7 @@ export default function VerificationPage() {
 
   function handleReset() {
     setClaim("");
+    setContext("");
     setResult(null);
     setSavedToProject(false);
     setError("");
@@ -78,10 +80,19 @@ export default function VerificationPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold text-brand-text">🔍 Verificar fuentes</h1>
-        <p className="mt-1 text-sm text-brand-text/70">Confirma si una afirmación tiene respaldo real.</p>
+        <p className="mt-1 text-sm text-brand-text/70">
+          Confirma si una afirmación tiene respaldo real: buscamos en internet y te mostramos las fuentes.
+        </p>
       </div>
 
-      <ClaimInput value={claim} onChange={setClaim} onSubmit={handleVerify} disabled={loading || !!result} />
+      <ClaimInput
+        value={claim}
+        onChange={setClaim}
+        context={context}
+        onContextChange={setContext}
+        onSubmit={handleVerify}
+        disabled={loading || !!result}
+      />
 
       {error && <p className="text-sm text-brand-error">{error}</p>}
       {needsUpgrade && <UpgradePrompt />}
@@ -89,7 +100,9 @@ export default function VerificationPage() {
       {loading && (
         <div className="flex items-center justify-center gap-3 py-8">
           <Spinner />
-          <span className="text-brand-text/70">Verificando afirmación...</span>
+          <span className="text-brand-text/70">
+            Buscando en internet y contrastando fuentes... puede tardar hasta un minuto.
+          </span>
         </div>
       )}
 
@@ -99,7 +112,6 @@ export default function VerificationPage() {
           <NextStepsPanel
             actions={[
               { emoji: "💡", label: "Investigar más esta historia", onClick: handleInvestigateFurther },
-              { emoji: "📄", label: "Analizar un documento relacionado", onClick: () => router.push("/documents") },
               { emoji: "💾", label: "Guardar en proyecto", onClick: () => setShowSaveModal(true) },
             ]}
           />

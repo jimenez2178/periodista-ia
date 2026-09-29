@@ -24,3 +24,27 @@ export async function analyzeDocument({ file, analysisTypes }) {
 
   return data;
 }
+
+export async function generateNoteFromAnalysis(documentId, { format, tone, length, organizationName, angle }) {
+  const response = await fetch(`/api/proxy/documents/${documentId}/note`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ format, tone, length, organization_name: organizationName, angle }),
+  });
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const error = new Error(data?.error || "No pudimos redactar la nota. Intenta de nuevo.");
+    error.status = response.status;
+    error.code = data?.code;
+    throw error;
+  }
+
+  return data;
+}

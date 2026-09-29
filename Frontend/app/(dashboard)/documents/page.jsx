@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DocumentUploader from "../../../components/documents/DocumentUploader";
 import DocumentResults from "../../../components/documents/DocumentResults";
+import DocumentNoteModal from "../../../components/documents/DocumentNoteModal";
+import ArticleResult from "../../../components/transcription/ArticleResult";
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
@@ -11,38 +13,11 @@ import Button from "../../../components/ui/Button";
 import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import SocialSharePanel from "../../../components/social/SocialSharePanel";
-import { analyzeDocument } from "../../../services/documents.service";
+import { analyzeDocument, generateNoteFromAnalysis } from "../../../services/documents.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
 import { setPrefilledInput } from "../../../hooks/usePrefilledInput";
 import { useUnsavedWarning } from "../../../hooks/useUnsavedWarning";
-
-const FALLBACK_LIST_SLUGS = ["budget_and_finances", "people_and_institutions", "dates_and_timeline", "contradictions"];
-
-function buildDocumentContentText(analysisTypes, results) {
-  return (analysisTypes || [])
-    .map((slug) => {
-      const value = results[slug];
-      const text = Array.isArray(value) ? value.map((item) => JSON.stringify(item)).join("\n") : value;
-      return `${slug}:\n${text}`;
-    })
-    .join("\n\n");
-}
-
-function pickPrefillText(results) {
-  if (results.key_data_points?.[0]) return results.key_data_points[0];
-
-  for (const slug of FALLBACK_LIST_SLUGS) {
-    if (results[slug]?.[0]) return results[slug][0];
-  }
-
-  if (results.executive_summary) {
-    const firstSentence = results.executive_summary.split(/(?<=[.!?])\s+/)[0];
-    return firstSentence || results.executive_summary;
-  }
-
-  return "";
-}
 
 export default function DocumentsPage() {
   const router = useRouter();
@@ -56,7 +31,20 @@ export default function DocumentsPage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [savedToProject, setSavedToProject] = useState(false);
 
-  useUnsavedWarning(!!result && !savedToProject, () => setShowSaveModal(true));
+  // Nota redactada a partir del análisis.
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [noteStory, setNoteStory] = useState(null);
+  const [noteGenerating, setNoteGenerating] = useState(false);
+  const [note, setNote] = useState(null);
+  const [noteError, setNoteError] = useState("");
+  const [noteNeedsUpgrade, setNoteNeedsUpgrade] = useState(false);
+  const [showNoteSaveModal, setShowNoteSaveModal] = useState(false);
+  const [noteSavedToProject, setNoteSavedToProject] = useState(false);
+
+  useUnsavedWarning(
+    (!!result && !savedToProject) || (!!note && !noteSavedToProject),
+    () => setShowSaveModal(true),
+  );
 
   async function handleAnalyze({ file, analysisTypes }) {
     setLoading(true);
@@ -88,19 +76,63 @@ export default function DocumentsPage() {
     setToastMessage("Guardado en el proyecto.");
   }
 
-  function handleVerifyClaim() {
-    setPrefilledInput("verification", pickPrefillText(result.results));
+  function handleVerifyFinding(finding) {
+    setPrefilledInput("verification", finding);
     router.push("/verification");
   }
 
-  function handleTurnIntoIdea() {
-    setPrefilledInput("idea", result.results.executive_summary || pickPrefillText(result.results));
+  function handleInvestigateStory(story) {
+    setPrefilledInput("idea", `${story.title}. ${story.description}`);
     router.push("/idea");
+  }
+
+  function handleTurnIntoIdea() {
+    setPrefilledInput("idea", result.results.executive_summary || "");
+    router.push("/idea");
+  }
+
+  function openNoteModal(story) {
+    setNoteStory(story || null);
+    setShowNoteModal(true);
+  }
+
+  async function handleGenerateNote(options) {
+    setShowNoteModal(false);
+    setNoteGenerating(true);
+    setNoteError("");
+    setNoteNeedsUpgrade(false);
+    setNote(null);
+    setNoteSavedToProject(false);
+
+    try {
+      const saved = await generateNoteFromAnalysis(result.id, options);
+      setNote(saved);
+      refreshCredits();
+    } catch (err) {
+      if (err.status === 402) {
+        setNoteNeedsUpgrade(true);
+      } else {
+        setNoteError(err.message);
+      }
+    } finally {
+      setNoteGenerating(false);
+    }
+  }
+
+  async function handleSaveNoteToProject(projectId) {
+    await addItemToProject({ projectId, type: "article", itemId: note.id });
+    setNoteSavedToProject(true);
+    setToastMessage("Nota guardada en el proyecto.");
   }
 
   function handleReset() {
     setResult(null);
     setSavedToProject(false);
+    setNote(null);
+    setNoteStory(null);
+    setNoteError("");
+    setNoteNeedsUpgrade(false);
+    setNoteSavedToProject(false);
     setError("");
     setNeedsUpgrade(false);
   }
@@ -110,7 +142,7 @@ export default function DocumentsPage() {
       <div>
         <h1 className="text-2xl font-bold text-brand-text">📄 Analizar documento</h1>
         <p className="mt-1 text-sm text-brand-text/70">
-          Sube un PDF, Word o Excel y obtén hallazgos periodísticos clave.
+          Sube un PDF, Word o Excel, obtén hallazgos periodísticos clave y redacta tu nota a partir de ellos.
         </p>
       </div>
 
@@ -130,33 +162,78 @@ export default function DocumentsPage() {
 
       {result && !loading && (
         <>
-          <DocumentResults analysisTypes={result.analysis_types} results={result.results} />
-          <SocialSharePanel
-            content={buildDocumentContentText(result.analysis_types, result.results)}
-            contentType="document_analysis"
+          <p className="text-sm text-brand-text/60">📎 {result.file_name}</p>
+
+          <DocumentResults
+            analysisTypes={result.analysis_types}
+            results={result.results}
+            onVerifyFinding={handleVerifyFinding}
+            onWriteStory={openNoteModal}
+            onInvestigateStory={handleInvestigateStory}
+            actionsDisabled={noteGenerating}
           />
+
+          <div className="flex flex-col gap-3 rounded-brand border border-brand-blue/30 bg-brand-blue/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-brand-text">
+              <span className="font-semibold">¿Listo para escribir?</span> Redacta una nota basada en este documento.
+            </p>
+            <Button onClick={() => openNoteModal(null)} disabled={noteGenerating} className="w-full sm:w-auto">
+              📰 Redactar nota
+            </Button>
+          </div>
+
+          {noteError && <p className="text-sm text-brand-error">{noteError}</p>}
+          {noteNeedsUpgrade && <UpgradePrompt />}
+
+          {noteGenerating && (
+            <div className="flex items-center justify-center gap-3 py-8">
+              <Spinner />
+              <span className="text-brand-text/70">Redactando tu nota...</span>
+            </div>
+          )}
+
+          {note && !noteGenerating && (
+            <>
+              <ArticleResult article={note} onArticleChange={setNote} />
+              <SocialSharePanel content={note.body} contentType="article" />
+              <div className="flex justify-end">
+                <Button onClick={() => setShowNoteSaveModal(true)}>Guardar nota en proyecto →</Button>
+              </div>
+            </>
+          )}
+
           <NextStepsPanel
             actions={[
-              { emoji: "🔍", label: "Verificar una afirmación del documento", onClick: handleVerifyClaim },
               { emoji: "💡", label: "Convertir en plan de investigación", onClick: handleTurnIntoIdea },
-              { emoji: "💾", label: "Guardar en proyecto", onClick: () => setShowSaveModal(true) },
+              { emoji: "💾", label: "Guardar análisis en proyecto", onClick: () => setShowSaveModal(true) },
             ]}
           />
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="secondary" onClick={handleReset} className="w-full sm:w-auto">
               Nuevo análisis
             </Button>
-            <Button onClick={() => setShowSaveModal(true)} className="w-full sm:w-auto">
-              Guardar en proyecto →
-            </Button>
           </div>
         </>
       )}
+
+      <DocumentNoteModal
+        open={showNoteModal}
+        story={noteStory}
+        onClose={() => setShowNoteModal(false)}
+        onSubmit={handleGenerateNote}
+        loading={noteGenerating}
+      />
 
       <SaveToProjectModal
         open={showSaveModal}
         onClose={() => setShowSaveModal(false)}
         onConfirm={handleSaveToProject}
+      />
+
+      <SaveToProjectModal
+        open={showNoteSaveModal}
+        onClose={() => setShowNoteSaveModal(false)}
+        onConfirm={handleSaveNoteToProject}
       />
 
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage("")} />}

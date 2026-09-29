@@ -25,13 +25,13 @@ const FEATURES = [
     href: "/verification",
     emoji: "🔍",
     title: "Verificar fuentes",
-    description: "Confirma si una afirmación tiene respaldo real",
+    description: "Confirma si una afirmación tiene respaldo real, con búsqueda en internet y fuentes",
   },
   {
     href: "/documents",
     emoji: "📄",
     title: "Analizar documento",
-    description: "Sube un PDF, Word o Excel y obtén hallazgos periodísticos clave",
+    description: "Sube un PDF, Word o Excel, obtén hallazgos clave y redacta tu nota a partir de ellos",
   },
   {
     href: "/interview",

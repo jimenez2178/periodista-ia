@@ -1,8 +1,8 @@
-export async function verifyClaim(claim) {
+export async function verifyClaim(claim, context) {
   const response = await fetch("/api/proxy/sources", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ claim }),
+    body: JSON.stringify({ claim, context }),
   });
 
   let data = null;
