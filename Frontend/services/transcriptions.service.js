@@ -47,3 +47,26 @@ export async function analyzeInterview(transcriptionId) {
 
   return data;
 }
+
+export async function updateTranscript(transcriptionId, transcriptText) {
+  const response = await fetch(`/api/proxy/transcriptions/${transcriptionId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transcript_text: transcriptText }),
+  });
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const error = new Error(data?.error || "No pudimos guardar tu corrección de la transcripción.");
+    error.status = response.status;
+    throw error;
+  }
+
+  return data;
+}

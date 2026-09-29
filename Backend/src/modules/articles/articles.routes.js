@@ -1,7 +1,13 @@
 const express = require("express");
 const requireCredits = require("../../middleware/credits");
 const { incrementUsedCredits } = require("../credits/credits.service");
-const { generateArticle, saveArticle, updateArticle, formatIdeaContent } = require("./articles.service");
+const {
+  generateArticle,
+  saveArticle,
+  updateArticle,
+  formatIdeaContent,
+  formatTranscriptionContent,
+} = require("./articles.service");
 const { supabaseAdmin } = require("../../config/supabase");
 
 const router = express.Router();
@@ -9,9 +15,43 @@ const router = express.Router();
 const VALID_TYPES = ["news_article", "press_release"];
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const MAX_CONTEXT_LENGTH = 2000;
+const MAX_ANGLE_LENGTH = 500;
+const MAX_QUOTES = 10;
+const MAX_QUOTE_LENGTH = 1000;
+
+// Indicaciones opcionales del periodista para una nota desde transcripción.
+function parseTranscriptionGuidance({ context, angle, quotes }) {
+  if (context != null && typeof context !== "string") return { error: "'context' debe ser texto." };
+  if (angle != null && typeof angle !== "string") return { error: "'angle' debe ser texto." };
+  if (quotes != null && !Array.isArray(quotes)) return { error: "'quotes' debe ser una lista." };
+
+  const cleanContext = (context || "").trim();
+  const cleanAngle = (angle || "").trim();
+  if (cleanContext.length > MAX_CONTEXT_LENGTH) {
+    return { error: `El contexto no puede superar ${MAX_CONTEXT_LENGTH} caracteres.` };
+  }
+  if (cleanAngle.length > MAX_ANGLE_LENGTH) {
+    return { error: `El ángulo no puede superar ${MAX_ANGLE_LENGTH} caracteres.` };
+  }
+
+  const cleanQuotes = (quotes || [])
+    .filter((item) => item && typeof item.quote === "string" && item.quote.trim())
+    .map((item) => ({
+      quote: item.quote.trim().slice(0, MAX_QUOTE_LENGTH),
+      speaker: typeof item.speaker === "string" ? item.speaker.trim().slice(0, 200) : "",
+    }));
+  if (cleanQuotes.length > MAX_QUOTES) {
+    return { error: `Puedes elegir hasta ${MAX_QUOTES} citas.` };
+  }
+
+  return { context: cleanContext, angle: cleanAngle, quotes: cleanQuotes };
+}
+
 router.post("/", requireCredits, async (req, res, next) => {
   try {
-    const { transcription_id, idea_text, plan, session_id, type, organization_name } = req.body;
+    const { transcription_id, idea_text, plan, session_id, type, organization_name, context, angle, quotes } =
+      req.body;
 
     if (!VALID_TYPES.includes(type)) {
       return res.status(400).json({ error: "El campo 'type' debe ser 'news_article' o 'press_release'." });
@@ -44,7 +84,12 @@ router.post("/", requireCredits, async (req, res, next) => {
         return res.status(404).json({ error: "No se encontró la transcripción." });
       }
 
-      content = transcription.transcript_text;
+      const guidance = parseTranscriptionGuidance({ context, angle, quotes });
+      if (guidance.error) {
+        return res.status(400).json({ error: guidance.error });
+      }
+
+      content = formatTranscriptionContent({ transcript: transcription.transcript_text, ...guidance });
       source = "transcription";
       transcriptionIdToSave = transcription_id;
       language = transcription.language_detected;

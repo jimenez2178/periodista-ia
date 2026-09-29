@@ -31,6 +31,21 @@ function formatIdeaContent(ideaText, plan) {
   return `Idea original:\n${ideaText}\n\n${sections.join("\n\n")}`;
 }
 
+function formatTranscriptionContent({ transcript, context, angle, quotes }) {
+  const parts = [];
+
+  if (context) parts.push(`Contexto del periodista:\n${context}`);
+  if (angle) parts.push(`Ángulo elegido:\n${angle}`);
+  if (quotes.length > 0) {
+    const lines = quotes.map(({ quote, speaker }) => `- "${quote}"${speaker ? ` — ${speaker}` : ""}`);
+    parts.push(`Citas elegidas:\n${lines.join("\n")}`);
+  }
+
+  // Sin indicaciones, la IA recibe la transcripción sola, igual que antes.
+  if (parts.length === 0) return transcript;
+  return `${parts.join("\n\n")}\n\nTranscripción:\n${transcript}`;
+}
+
 async function generateArticle({ source, content, type, organizationName }) {
   let systemPrompt;
 
@@ -93,4 +108,4 @@ async function updateArticle({ userId, articleId, title, body }) {
   return data;
 }
 
-module.exports = { generateArticle, saveArticle, updateArticle, formatIdeaContent };
+module.exports = { generateArticle, saveArticle, updateArticle, formatIdeaContent, formatTranscriptionContent };

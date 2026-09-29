@@ -20,6 +20,8 @@ marcas de quién habla en cada momento). Analízala y responde:
 - main_topics: los temas principales discutidos, como lista de strings.
 - suggested_angle: el ángulo periodístico más fuerte que sugiere el contenido de
   la entrevista, en una frase.
+- alternative_angles: 2 ángulos periodísticos alternativos, distintos entre sí y
+  del sugerido, cada uno en una frase y respaldado por lo que se dice en la entrevista.
 Responde siempre en el mismo idioma de la transcripción.`;
 
 const InterviewAnalysisSchema = z.object({
@@ -33,6 +35,7 @@ const InterviewAnalysisSchema = z.object({
   ),
   main_topics: z.array(z.string()),
   suggested_angle: z.string(),
+  alternative_angles: z.array(z.string()),
 });
 
 async function getAudioDuration(buffer, mimeType) {
@@ -113,10 +116,24 @@ async function updateTranscriptionAnalysis({ transcriptionId, analysis }) {
   return data;
 }
 
+async function updateTranscriptText({ userId, transcriptionId, text }) {
+  const { data, error } = await supabaseAdmin
+    .from("transcriptions")
+    .update({ transcript_text: text })
+    .eq("id", transcriptionId)
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
 module.exports = {
   getAudioDuration,
   transcribeAudio,
   saveTranscription,
   analyzeInterview,
   updateTranscriptionAnalysis,
+  updateTranscriptText,
 };

@@ -1,7 +1,7 @@
 import Card from "../ui/Card";
 
-export default function InterviewAnalysis({ analysis }) {
-  const { participants, top_quotes: topQuotes, main_topics: mainTopics, suggested_angle: suggestedAngle } = analysis;
+export default function InterviewAnalysis({ analysis, selectedQuotes, onToggleQuote, disabled }) {
+  const { participants, top_quotes: topQuotes, main_topics: mainTopics } = analysis;
 
   return (
     <Card className="flex flex-col gap-4">
@@ -29,15 +29,34 @@ export default function InterviewAnalysis({ analysis }) {
         {topQuotes.length === 0 ? (
           <p className="mt-3 text-sm text-brand-text/70">No se encontraron citas destacables.</p>
         ) : (
-          <div className="mt-3 flex flex-col gap-3">
-            {topQuotes.map((item, index) => (
-              <div key={index} className="border-l-2 border-brand-blue/30 pl-3">
-                <p className="text-sm italic text-brand-text">"{item.quote}"</p>
-                <p className="mt-1 text-xs font-medium text-brand-text/60">— {item.speaker}</p>
-                <p className="mt-1 text-sm text-brand-text/70">{item.why_newsworthy}</p>
-              </div>
-            ))}
-          </div>
+          <>
+            <p className="mt-3 text-xs text-brand-text/60">
+              Marca las citas que quieres en tu nota. Si no marcas ninguna, la IA elige las más relevantes.
+            </p>
+            <div className="mt-3 flex flex-col gap-3">
+              {topQuotes.map((item, index) => (
+                <label
+                  key={index}
+                  htmlFor={`quote-${index}`}
+                  className="flex cursor-pointer gap-3 rounded-brand border border-brand-border p-3 transition-colors hover:border-brand-blue has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue/5"
+                >
+                  <input
+                    id={`quote-${index}`}
+                    type="checkbox"
+                    checked={selectedQuotes.includes(index)}
+                    onChange={() => onToggleQuote(index)}
+                    disabled={disabled}
+                    className="mt-1 h-4 w-4 shrink-0 accent-brand-blue"
+                  />
+                  <div>
+                    <p className="text-sm italic text-brand-text">"{item.quote}"</p>
+                    <p className="mt-1 text-xs font-medium text-brand-text/60">— {item.speaker}</p>
+                    <p className="mt-1 text-sm text-brand-text/70">{item.why_newsworthy}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </>
         )}
       </details>
 
@@ -54,13 +73,9 @@ export default function InterviewAnalysis({ analysis }) {
         )}
       </details>
 
-      <div className="rounded-brand border border-brand-yellow bg-brand-yellow/10 p-4">
-        <h3 className="mb-2 font-semibold text-brand-text">🎯 Ángulo sugerido</h3>
-        <p className="text-sm text-brand-text/80">{suggestedAngle}</p>
-      </div>
-
       <p className="text-xs text-brand-text/50">
-        Los nombres y roles se infieren del texto de la transcripción y pueden no ser exactos.
+        Los nombres y roles se infieren del texto de la transcripción y pueden no ser exactos. Corrígelos en el
+        contexto de la nota, más abajo.
       </p>
     </Card>
   );

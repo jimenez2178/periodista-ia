@@ -7,6 +7,7 @@ import TranscriptionResult from "../../../components/transcription/Transcription
 import InterviewAnalysis from "../../../components/transcription/InterviewAnalysis";
 import ArticleResult from "../../../components/transcription/ArticleResult";
 import PressReleaseForm from "../../../components/transcription/PressReleaseForm";
+import NoteSetup, { buildAngleOptions, CUSTOM_ANGLE } from "../../../components/transcription/NoteSetup";
 import UpgradePrompt from "../../../components/credits/UpgradePrompt";
 import Spinner from "../../../components/ui/Spinner";
 import Toast from "../../../components/ui/Toast";
@@ -14,7 +15,7 @@ import Button from "../../../components/ui/Button";
 import NextStepsPanel from "../../../components/ui/NextStepsPanel";
 import SaveToProjectModal from "../../../components/projects/SaveToProjectModal";
 import SocialSharePanel from "../../../components/social/SocialSharePanel";
-import { transcribe, analyzeInterview } from "../../../services/transcriptions.service";
+import { transcribe, analyzeInterview, updateTranscript } from "../../../services/transcriptions.service";
 import { generateArticle } from "../../../services/articles.service";
 import { addItemToProject } from "../../../services/projects.service";
 import { useCredits } from "../../../hooks/useCredits";
@@ -37,6 +38,13 @@ export default function TranscriptionPage() {
   const [generating, setGenerating] = useState(false);
   const [article, setArticle] = useState(null);
   const [showPressReleaseModal, setShowPressReleaseModal] = useState(false);
+
+  // Lo que el periodista decide antes de redactar.
+  const [transcriptDraft, setTranscriptDraft] = useState("");
+  const [selectedQuotes, setSelectedQuotes] = useState([]);
+  const [angleChoice, setAngleChoice] = useState("");
+  const [customAngle, setCustomAngle] = useState("");
+  const [context, setContext] = useState("");
 
   const [error, setError] = useState("");
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
@@ -70,16 +78,19 @@ export default function TranscriptionPage() {
     try {
       const data = await transcribe(input);
       setTranscription(data);
+      setTranscriptDraft(data.transcript);
       refreshCredits();
 
       setAnalyzing(true);
+      let analysis = null;
       try {
-        const analysis = await analyzeInterview(data.transcription_id);
+        analysis = await analyzeInterview(data.transcription_id);
         setInterviewAnalysis(analysis);
       } catch {
         // El análisis es un extra sobre la transcripción ya pagada — si falla,
         // el periodista igual puede ver su transcripción y generar la nota.
       } finally {
+        setAngleChoice(buildAngleOptions(analysis)[0].id);
         setAnalyzing(false);
       }
     } catch (err) {
@@ -101,10 +112,35 @@ export default function TranscriptionPage() {
     setNeedsUpgrade(false);
 
     try {
+      if (!transcriptDraft.trim()) {
+        setError("La transcripción no puede quedar vacía.");
+        return;
+      }
+
+      // La nota se redacta desde la transcripción guardada, así que primero
+      // guardamos las correcciones del periodista.
+      if (transcriptDraft !== transcription.transcript) {
+        const saved = await updateTranscript(transcription.transcription_id, transcriptDraft);
+        setTranscription((current) => ({ ...current, transcript: saved.transcript }));
+        setTranscriptDraft(saved.transcript);
+      }
+
+      const angle =
+        angleChoice === CUSTOM_ANGLE
+          ? customAngle.trim()
+          : buildAngleOptions(interviewAnalysis).find((option) => option.id === angleChoice)?.angle || "";
+      const quotes = selectedQuotes.map((index) => {
+        const { quote, speaker } = interviewAnalysis.top_quotes[index];
+        return { quote, speaker };
+      });
+
       const data = await generateArticle({
         transcription_id: transcription.transcription_id,
         type,
         organization_name: organizationName,
+        context: context.trim(),
+        angle,
+        quotes,
       });
       setArticle(data);
       refreshCredits();
@@ -119,10 +155,21 @@ export default function TranscriptionPage() {
     }
   }
 
+  function handleToggleQuote(index) {
+    setSelectedQuotes((current) =>
+      current.includes(index) ? current.filter((item) => item !== index) : [...current, index].sort((a, b) => a - b),
+    );
+  }
+
   function handleReset() {
     setTranscription(null);
     setAnalyzing(false);
     setInterviewAnalysis(null);
+    setTranscriptDraft("");
+    setSelectedQuotes([]);
+    setAngleChoice("");
+    setCustomAngle("");
+    setContext("");
     setArticle(null);
     setSavedToProject(false);
     setError("");
@@ -159,10 +206,30 @@ export default function TranscriptionPage() {
 
       {transcription && !analyzing && !article && (
         <>
-          {interviewAnalysis && <InterviewAnalysis analysis={interviewAnalysis} />}
+          {interviewAnalysis && (
+            <InterviewAnalysis
+              analysis={interviewAnalysis}
+              selectedQuotes={selectedQuotes}
+              onToggleQuote={handleToggleQuote}
+              disabled={generating}
+            />
+          )}
           <TranscriptionResult
-            transcript={transcription.transcript}
+            transcript={transcriptDraft}
+            originalTranscript={transcription.transcript}
             language={transcription.language}
+            onTranscriptChange={setTranscriptDraft}
+            disabled={generating}
+          />
+          <NoteSetup
+            angleOptions={buildAngleOptions(interviewAnalysis)}
+            angleChoice={angleChoice}
+            onAngleChoiceChange={setAngleChoice}
+            customAngle={customAngle}
+            onCustomAngleChange={setCustomAngle}
+            context={context}
+            onContextChange={setContext}
+            selectedQuotesCount={selectedQuotes.length}
             disabled={generating}
             onGenerateNews={() => handleGenerateArticle("news_article")}
             onGeneratePressRelease={() => setShowPressReleaseModal(true)}

@@ -8,6 +8,7 @@ const {
   saveTranscription,
   analyzeInterview,
   updateTranscriptionAnalysis,
+  updateTranscriptText,
 } = require("./transcriptions.service");
 const { downloadAudioFromUrl, MAX_AUDIO_BYTES } = require("../../utils/audioProcessor");
 const { supabaseAdmin } = require("../../config/supabase");
@@ -16,6 +17,8 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX
 const router = express.Router();
 
 const FREE_PLAN_MAX_DURATION_SECS = 120;
+const MAX_TRANSCRIPT_LENGTH = 200000;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const EXTENSION_BY_CONTENT_TYPE = {
   "audio/mpeg": "mp3",
@@ -119,6 +122,38 @@ router.post("/analyze", async (req, res, next) => {
     await updateTranscriptionAnalysis({ transcriptionId: transcription_id, analysis });
 
     res.json(analysis);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// El periodista corrige lo que Whisper transcribió mal (nombres propios, siglas,
+// cifras) antes de generar la nota; la nota se redacta desde este texto.
+router.patch("/:id", async (req, res, next) => {
+  try {
+    const { transcript_text: text } = req.body;
+
+    if (typeof text !== "string" || !text.trim()) {
+      return res.status(400).json({ error: "La transcripción no puede quedar vacía." });
+    }
+    if (text.length > MAX_TRANSCRIPT_LENGTH) {
+      return res.status(400).json({ error: "La transcripción es demasiado larga." });
+    }
+    if (!UUID_PATTERN.test(req.params.id)) {
+      return res.status(404).json({ error: "No se encontró la transcripción." });
+    }
+
+    const updated = await updateTranscriptText({
+      userId: req.user.id,
+      transcriptionId: req.params.id,
+      text: text.trim(),
+    });
+
+    if (!updated) {
+      return res.status(404).json({ error: "No se encontró la transcripción." });
+    }
+
+    res.json({ transcription_id: updated.id, transcript: text.trim() });
   } catch (err) {
     next(err);
   }
