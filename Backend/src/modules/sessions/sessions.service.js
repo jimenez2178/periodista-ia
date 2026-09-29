@@ -1,5 +1,8 @@
 const { supabaseAdmin } = require("../../config/supabase");
 
+// Una sesión de "Tengo una idea" guarda dos mensajes: la idea (user) y la versión
+// vigente del plan en JSON (assistant). Refinar el plan o marcar pasos reescribe
+// ese mensaje, así el historial y los proyectos siempre muestran el plan actual.
 async function createIdeaSession({ userId, projectId, idea, plan }) {
   const title = idea.length > 80 ? `${idea.slice(0, 80)}…` : idea;
 
@@ -21,4 +24,42 @@ async function createIdeaSession({ userId, projectId, idea, plan }) {
   return session;
 }
 
-module.exports = { createIdeaSession };
+async function getIdeaSession({ userId, sessionId }) {
+  const { data: session, error } = await supabaseAdmin
+    .from("sessions")
+    .select("id, messages(id, role, content)")
+    .eq("id", sessionId)
+    .eq("user_id", userId)
+    .eq("function_used", "idea")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!session) return null;
+
+  const ideaMessage = session.messages.find((m) => m.role === "user");
+  const planMessage = session.messages.find((m) => m.role === "assistant");
+  if (!ideaMessage || !planMessage) return null;
+
+  let plan;
+  try {
+    plan = JSON.parse(planMessage.content);
+  } catch {
+    return null;
+  }
+
+  return { id: session.id, idea: ideaMessage.content, plan, planMessageId: planMessage.id };
+}
+
+async function updateIdeaPlan({ sessionId, planMessageId, plan }) {
+  const { error } = await supabaseAdmin
+    .from("messages")
+    .update({ content: JSON.stringify(plan) })
+    .eq("id", planMessageId)
+    .eq("session_id", sessionId);
+
+  if (error) throw error;
+
+  await supabaseAdmin.from("sessions").update({ updated_at: new Date().toISOString() }).eq("id", sessionId);
+}
+
+module.exports = { createIdeaSession, getIdeaSession, updateIdeaPlan };

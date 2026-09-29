@@ -5,31 +5,12 @@ const { supabaseAdmin } = require("../../config/supabase");
 const {
   NEWS_ARTICLE_SYSTEM_PROMPT,
   buildPressReleaseSystemPrompt,
-  IDEA_NEWS_ARTICLE_SYSTEM_PROMPT,
-  buildIdeaPressReleaseSystemPrompt,
 } = require("./articles.prompts");
 
 const ArticleSchema = z.object({
   title: z.string(),
   body: z.string(),
 });
-
-const PLAN_SECTIONS = [
-  { key: "angle_suggestions", label: "Ángulos posibles" },
-  { key: "key_questions", label: "Preguntas clave" },
-  { key: "sources_to_check", label: "Fuentes a consultar" },
-  { key: "investigation_steps", label: "Pasos de investigación" },
-  { key: "potential_challenges", label: "Posibles obstáculos" },
-];
-
-function formatIdeaContent(ideaText, plan) {
-  const sections = PLAN_SECTIONS.map(({ key, label }) => {
-    const items = plan[key] || [];
-    return `${label}:\n${items.map((item) => `- ${item}`).join("\n")}`;
-  });
-
-  return `Idea original:\n${ideaText}\n\n${sections.join("\n\n")}`;
-}
 
 function formatTranscriptionContent({ transcript, context, angle, quotes }) {
   const parts = [];
@@ -46,14 +27,8 @@ function formatTranscriptionContent({ transcript, context, angle, quotes }) {
   return `${parts.join("\n\n")}\n\nTranscripción:\n${transcript}`;
 }
 
-async function generateArticle({ source, content, type, organizationName }) {
-  let systemPrompt;
-
-  if (source === "idea") {
-    systemPrompt = type === "press_release" ? buildIdeaPressReleaseSystemPrompt(organizationName) : IDEA_NEWS_ARTICLE_SYSTEM_PROMPT;
-  } else {
-    systemPrompt = type === "press_release" ? buildPressReleaseSystemPrompt(organizationName) : NEWS_ARTICLE_SYSTEM_PROMPT;
-  }
+async function generateArticle({ content, type, organizationName }) {
+  const systemPrompt = type === "press_release" ? buildPressReleaseSystemPrompt(organizationName) : NEWS_ARTICLE_SYSTEM_PROMPT;
 
   const response = await anthropic.messages.parse({
     model: "claude-sonnet-5",
@@ -108,4 +83,4 @@ async function updateArticle({ userId, articleId, title, body }) {
   return data;
 }
 
-module.exports = { generateArticle, saveArticle, updateArticle, formatIdeaContent, formatTranscriptionContent };
+module.exports = { generateArticle, saveArticle, updateArticle, formatTranscriptionContent };

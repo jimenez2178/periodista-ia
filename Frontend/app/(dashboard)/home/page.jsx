@@ -19,7 +19,7 @@ const FEATURES = [
     href: "/idea",
     emoji: "💡",
     title: "Tengo una idea",
-    description: "Convierte una observación en un plan de investigación completo",
+    description: "Convierte una observación en un plan de investigación y produce tu pitch o tu nota",
   },
   {
     href: "/verification",

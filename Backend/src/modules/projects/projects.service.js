@@ -6,6 +6,7 @@ const ITEM_TABLES = {
   transcription: "transcriptions",
   document: "documents",
   interview: "interviews",
+  idea: "sessions",
 };
 
 function truncate(text, length = 160) {

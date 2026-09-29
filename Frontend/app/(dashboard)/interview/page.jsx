@@ -35,8 +35,22 @@ export default function InterviewPage() {
 
   useUnsavedWarning(!!interview && !savedToProject, handleSaveToProject);
 
+  // Otras secciones (ej. una fuente del plan de "Tengo una idea") pueden enviar
+  // { interviewee, topic } en JSON o solo el nombre del entrevistado.
   useEffect(() => {
-    if (prefilledInterviewee) setForm((current) => ({ ...current, interviewee: prefilledInterviewee }));
+    if (!prefilledInterviewee) return;
+    let prefill = { interviewee: prefilledInterviewee };
+    try {
+      const parsed = JSON.parse(prefilledInterviewee);
+      if (parsed && typeof parsed === "object") prefill = parsed;
+    } catch {
+      // Texto plano: es el nombre del entrevistado.
+    }
+    setForm((current) => ({
+      ...current,
+      interviewee: prefill.interviewee || current.interviewee,
+      topic: prefill.topic || current.topic,
+    }));
   }, [prefilledInterviewee]);
 
   async function handleSaveToProject(projectId) {
