@@ -76,6 +76,15 @@ export async function deleteProject(id) {
 }
 
 export async function addItemToProject({ projectId, type, itemId }) {
+  // Sin id no hay nada que vincular (ej. el resultado vino de un backend con una
+  // versión anterior que no lo devolvía): se avisa en vez del error técnico del servidor.
+  if (!itemId) {
+    console.error(`addItemToProject: el elemento de tipo "${type}" no tiene id; ¿el backend está actualizado?`);
+    throw new Error(
+      "No pudimos identificar este resultado para guardarlo. Vuelve a generarlo e inténtalo de nuevo; si sigue pasando, avísanos."
+    );
+  }
+
   const response = await fetch(`/api/proxy/projects/${projectId}/items`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
