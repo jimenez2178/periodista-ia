@@ -49,6 +49,23 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
+// Lo usa solo el proxy del frontend (el refresh token vive en una cookie httpOnly
+// y nunca llega al navegador).
+router.post("/refresh", async (req, res) => {
+  const { refresh_token: refreshToken } = req.body;
+
+  if (typeof refreshToken !== "string" || !refreshToken) {
+    return res.status(400).json({ error: "Falta el refresh token." });
+  }
+
+  try {
+    const result = await authService.refreshSession(refreshToken);
+    res.json(result);
+  } catch {
+    res.status(401).json({ error: "La sesión expiró. Vuelve a iniciar sesión." });
+  }
+});
+
 router.post("/logout", requireAuth, async (req, res, next) => {
   try {
     await authService.logout(req.token);

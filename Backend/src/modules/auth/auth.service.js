@@ -28,6 +28,14 @@ async function login(email, password) {
   return { user: data.user, session: data.session };
 }
 
+// El token de acceso dura 1 hora; con el refresh token se obtiene una sesión nueva
+// sin pedirle al periodista que vuelva a iniciar sesión.
+async function refreshSession(refreshToken) {
+  const { data, error } = await supabaseAuth.auth.refreshSession({ refresh_token: refreshToken });
+  if (error) throw error;
+  return { session: data.session };
+}
+
 async function logout(accessToken) {
   const { error } = await supabaseAdmin.auth.admin.signOut(accessToken, "global");
   if (error) throw error;
@@ -52,4 +60,4 @@ async function resetPassword(accessToken, newPassword) {
   return data.user;
 }
 
-module.exports = { register, login, logout, forgotPassword, resetPassword };
+module.exports = { register, login, refreshSession, logout, forgotPassword, resetPassword };
