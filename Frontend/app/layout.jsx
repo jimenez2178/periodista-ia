@@ -1,6 +1,7 @@
 import "../styles/globals.css";
 import { AuthProvider } from "../context/AuthContext";
 import ServiceWorkerCleanup from "../components/ServiceWorkerCleanup";
+import InstallGuideModal from "../components/pwa/InstallGuideModal";
 
 export const metadata = {
   title: "PeriodistaIA",
@@ -14,6 +15,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <ServiceWorkerCleanup />
           {children}
+          <InstallGuideModal />
         </AuthProvider>
       </body>
     </html>

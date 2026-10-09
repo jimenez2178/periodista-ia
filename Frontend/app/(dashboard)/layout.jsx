@@ -9,6 +9,7 @@ import Sidebar from "../../components/layout/Sidebar";
 import TopBar from "../../components/layout/TopBar";
 import PageWrapper from "../../components/layout/PageWrapper";
 import AssistantButton from "../../components/assistant/AssistantButton";
+import InstallBanner from "../../components/pwa/InstallBanner";
 
 export default function DashboardLayout({ children }) {
   const { user, loading } = useAuth();
@@ -36,6 +37,7 @@ export default function DashboardLayout({ children }) {
         <div className="flex h-screen bg-brand-bg">
           <Sidebar open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
           <div className="flex flex-1 flex-col overflow-hidden">
+            <InstallBanner />
             <TopBar onMenuClick={() => setMobileMenuOpen(true)} />
             <PageWrapper>{children}</PageWrapper>
           </div>

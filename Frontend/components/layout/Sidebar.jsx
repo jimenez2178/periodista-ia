@@ -7,6 +7,7 @@ import { Home, FolderKanban, History, FileText, User, X, LogOut, Mic, Compass, F
 import { useAuth } from "../../hooks/useAuth";
 import { getInitials } from "../../utils/formatters";
 import { useGuardedNavigation } from "../../context/NavigationGuardContext";
+import InstallButton from "../pwa/InstallButton";
 
 const NAV_ITEMS = [
   { href: "/home", label: "Inicio", icon: Home },
@@ -81,6 +82,7 @@ export default function Sidebar({ open, onClose }) {
               </Link>
             );
           })}
+          <InstallButton variant="sidebar" onClick={onClose} />
         </nav>
 
         <div className="flex flex-col border-t border-white/10 px-6 py-4">
