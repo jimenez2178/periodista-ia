@@ -275,7 +275,7 @@ async function setSubscriptionStatus(subscription, status) {
 
 async function handleSubscriptionStatusEvent(subscription, status) {
   const user = await setSubscriptionStatus(subscription, status);
-  if (!user) return;
+  if (!user) return "sin cambios (aviso repetido o no es la suscripción actual)";
 
   if (status === SUBSCRIPTION_STATUS.EXPIRED) {
     await downgradeToFree(user.id, { subscriptionStatus: SUBSCRIPTION_STATUS.EXPIRED });
@@ -294,6 +294,8 @@ async function handleSubscriptionStatusEvent(subscription, status) {
     `📅 Pro hasta: ${status === SUBSCRIPTION_STATUS.EXPIRED ? "ya no" : formatDate(user.plan_expires_at)}`,
     `🆔 Suscripción: ${subscription.id}`,
   ]);
+
+  return status === SUBSCRIPTION_STATUS.EXPIRED ? "estado → expired, pasó a Gratis" : `estado → ${status}`;
 }
 
 // Cobro mensual completado (incluye el primero).
@@ -302,7 +304,7 @@ async function handleSaleCompleted(sale) {
   if (!subscriptionId) {
     // Cobro que no es de una suscripcion (p. ej. el enlace de pago unico,
     // que se procesa por IPN en /api/payments/webhook).
-    return;
+    return "no es de una suscripción, ignorado";
   }
 
   // Le pedimos a PayPal la suscripcion: trae el custom_id (usuario) y la
@@ -315,7 +317,7 @@ async function handleSaleCompleted(sale) {
     subscription.status === "ACTIVE"
       ? await activateSubscription(subscription)
       : { user: await findUserById(subscription.custom_id), expiresAt: null };
-  if (!result?.user) return;
+  if (!result?.user) return "usuario no encontrado, ignorado";
 
   const { error } = await supabaseAdmin.from("payments").insert({
     user_id: result.user.id,
@@ -330,7 +332,7 @@ async function handleSaleCompleted(sale) {
   if (error) {
     if (error.code === "23505") {
       console.warn(`[payments] Cobro ${sale.id} ya registrado. Se ignora el aviso repetido.`);
-      return;
+      return "cobro ya registrado (aviso repetido), ignorado";
     }
     throw error;
   }
@@ -342,6 +344,8 @@ async function handleSaleCompleted(sale) {
     `📅 Pro hasta: ${formatDate(result.expiresAt || result.user.plan_expires_at)}`,
     `🆔 Cobro: ${sale.id}`,
   ]);
+
+  return subscription.status === "ACTIVE" ? "cobro registrado, vencimiento actualizado" : "cobro registrado (suscripción no activa)";
 }
 
 // Reembolso o contracargo: Gratis al instante y se cancela la suscripcion
@@ -356,15 +360,15 @@ async function handleSaleReversed(saleId, kind) {
   if (error) throw error;
   if (!payment) {
     console.warn(`[payments] ${kind} de un cobro que no tenemos registrado (${saleId}). Se ignora.`);
-    return;
+    return "cobro no registrado, ignorado";
   }
-  if (payment.status === kind) return; // aviso repetido
+  if (payment.status === kind) return "aviso repetido, ignorado";
 
   const { error: updateError } = await supabaseAdmin.from("payments").update({ status: kind }).eq("id", payment.id);
   if (updateError) throw updateError;
 
   const user = await findUserById(payment.user_id);
-  if (!user) return;
+  if (!user) return `cobro marcado ${kind}; usuario no encontrado`;
 
   if (user.paypal_subscription_id) {
     try {
@@ -384,39 +388,54 @@ async function handleSaleReversed(saleId, kind) {
     `💵 Monto: $${payment.amount} ${payment.currency}`,
     `🆔 Cobro: ${saleId}`,
   ]);
+
+  return user.paypal_subscription_id ? `cobro ${kind}: pasó a Gratis y se canceló la suscripción` : `cobro ${kind}: pasó a Gratis`;
 }
 
+// Procesa un aviso ya verificado. Devuelve { subscriptionId, result } para
+// el registro del servidor (sin datos personales).
 async function handlePaypalEvent(event) {
   const resource = event.resource || {};
+  const subscriptionId =
+    resource.billing_agreement_id || (event.event_type?.startsWith("BILLING.SUBSCRIPTION.") ? resource.id : null);
 
+  let result;
   switch (event.event_type) {
-    case "BILLING.SUBSCRIPTION.ACTIVATED":
-      await activateSubscription(resource);
+    case "BILLING.SUBSCRIPTION.ACTIVATED": {
+      const activated = await activateSubscription(resource);
+      result = !activated
+        ? "ignorado (datos no válidos o usuario desconocido)"
+        : activated.isNew
+          ? "activada (alta nueva)"
+          : "ya estaba activa, sin repetir el alta";
       break;
+    }
     case "PAYMENT.SALE.COMPLETED":
-      await handleSaleCompleted(resource);
+      result = await handleSaleCompleted(resource);
       break;
     case "BILLING.SUBSCRIPTION.PAYMENT.FAILED":
-      await handleSubscriptionStatusEvent(resource, SUBSCRIPTION_STATUS.PAST_DUE);
+      result = await handleSubscriptionStatusEvent(resource, SUBSCRIPTION_STATUS.PAST_DUE);
       break;
     case "BILLING.SUBSCRIPTION.SUSPENDED":
-      await handleSubscriptionStatusEvent(resource, SUBSCRIPTION_STATUS.SUSPENDED);
+      result = await handleSubscriptionStatusEvent(resource, SUBSCRIPTION_STATUS.SUSPENDED);
       break;
     case "BILLING.SUBSCRIPTION.CANCELLED":
-      await handleSubscriptionStatusEvent(resource, SUBSCRIPTION_STATUS.CANCELLED);
+      result = await handleSubscriptionStatusEvent(resource, SUBSCRIPTION_STATUS.CANCELLED);
       break;
     case "BILLING.SUBSCRIPTION.EXPIRED":
-      await handleSubscriptionStatusEvent(resource, SUBSCRIPTION_STATUS.EXPIRED);
+      result = await handleSubscriptionStatusEvent(resource, SUBSCRIPTION_STATUS.EXPIRED);
       break;
     case "PAYMENT.SALE.REFUNDED":
-      await handleSaleReversed(resource.sale_id, "refunded");
+      result = await handleSaleReversed(resource.sale_id, "refunded");
       break;
     case "PAYMENT.SALE.REVERSED":
-      await handleSaleReversed(resource.id, "reversed");
+      result = await handleSaleReversed(resource.id, "reversed");
       break;
     default:
-      console.log(`[payments] Aviso de PayPal "${event.event_type}" sin acción.`);
+      result = "sin acción";
   }
+
+  return { subscriptionId, result };
 }
 
 // --- Acciones del usuario (con sesion iniciada) ---

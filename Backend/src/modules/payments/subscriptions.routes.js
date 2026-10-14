@@ -42,7 +42,11 @@ router.post("/paypal-events", jsonWithRawBody, async (req, res) => {
   }
 
   try {
-    await handlePaypalEvent(req.body);
+    const { subscriptionId, result } = await handlePaypalEvent(req.body);
+    // Solo tipo de aviso, numero de suscripcion y resultado: sin datos personales.
+    console.log(
+      `[subscriptions] Aviso procesado: ${req.body?.event_type} | suscripción ${subscriptionId || "-"} | ${result}`,
+    );
     res.sendStatus(200);
   } catch (err) {
     console.error(`[subscriptions] Error procesando el aviso ${req.body?.event_type} (${req.body?.id}):`, err);
