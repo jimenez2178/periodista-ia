@@ -225,12 +225,17 @@ async function activateSubscription(subscription) {
   const isNew = newlyAssigned.length > 0;
 
   if (!isNew) {
-    const { error } = await supabaseAdmin
+    // Una suscripcion reembolsada no vuelve a dar Pro aunque llegue tarde un
+    // aviso suyo. Una suscripcion nueva (otro numero) entra por el alta de arriba.
+    const { data: reactivated, error } = await supabaseAdmin
       .from("users")
       .update({ plan: "pro", subscription_status: SUBSCRIPTION_STATUS.ACTIVE, plan_expires_at: expiresAt })
       .eq("id", user.id)
-      .eq("paypal_subscription_id", subscription.id);
+      .eq("paypal_subscription_id", subscription.id)
+      .or(`subscription_status.is.null,subscription_status.neq.${SUBSCRIPTION_STATUS.REFUNDED}`)
+      .select("id");
     if (error) throw error;
+    if (reactivated.length === 0) return { user, isNew: false, expiresAt: null, refunded: true };
   }
 
   await upgradeCreditsToPro(user.id);
@@ -253,29 +258,45 @@ async function activateSubscription(subscription) {
   return { user, isNew, expiresAt };
 }
 
-// Cambia el estado guardado de la suscripcion. Devuelve el usuario solo si el
-// estado realmente cambio (un aviso repetido no notifica dos veces).
+// Estados finales de una suscripcion: avisos posteriores de ESA suscripcion
+// (cancelada, suspendida, cobro fallido...) ya no cambian nada ni notifican.
+// Por ejemplo, al reembolsar la cancelamos nosotros y PayPal manda despues
+// "cancelada". El estado va en la misma fila que paypal_subscription_id, asi
+// que una suscripcion nueva (otro numero) empieza de cero.
+const FINAL_SUBSCRIPTION_STATUSES = [SUBSCRIPTION_STATUS.REFUNDED, SUBSCRIPTION_STATUS.EXPIRED];
+
+// Cambia el estado guardado de la suscripcion. Devuelve { user } solo si el
+// estado realmente cambio; si no, { skipped } con el motivo.
 async function setSubscriptionStatus(subscription, status) {
   const user = await findUserById(subscription.custom_id);
   if (!user || user.paypal_subscription_id !== subscription.id) {
     console.warn(`[payments] Aviso de una suscripción que no es la actual del usuario (${subscription.id}). Se ignora.`);
-    return null;
+    return { skipped: "no es la suscripción actual" };
+  }
+  if (FINAL_SUBSCRIPTION_STATUSES.includes(user.subscription_status)) {
+    return { skipped: "ya reembolsada o terminada" };
+  }
+  if (user.subscription_status === status) {
+    return { skipped: "aviso repetido" };
   }
 
+  // La condicion se repite en la base de datos para que dos avisos casi
+  // simultaneos no se pisen.
   const { data, error } = await supabaseAdmin
     .from("users")
     .update({ subscription_status: status })
     .eq("id", user.id)
-    .or(`subscription_status.is.null,subscription_status.neq.${status}`)
+    .eq("paypal_subscription_id", subscription.id)
+    .or(`subscription_status.is.null,subscription_status.not.in.(${[status, ...FINAL_SUBSCRIPTION_STATUSES].join(",")})`)
     .select("id");
 
   if (error) throw error;
-  return data.length > 0 ? user : null;
+  return data.length > 0 ? { user } : { skipped: "aviso repetido o ya reembolsada o terminada" };
 }
 
 async function handleSubscriptionStatusEvent(subscription, status) {
-  const user = await setSubscriptionStatus(subscription, status);
-  if (!user) return "sin cambios (aviso repetido o no es la suscripción actual)";
+  const { user, skipped } = await setSubscriptionStatus(subscription, status);
+  if (!user) return `sin cambios (${skipped})`;
 
   if (status === SUBSCRIPTION_STATUS.EXPIRED) {
     await downgradeToFree(user.id, { subscriptionStatus: SUBSCRIPTION_STATUS.EXPIRED });
@@ -345,6 +366,7 @@ async function handleSaleCompleted(sale) {
     `🆔 Cobro: ${sale.id}`,
   ]);
 
+  if (result.refunded) return "cobro registrado (suscripción reembolsada: no da Pro)";
   return subscription.status === "ACTIVE" ? "cobro registrado, vencimiento actualizado" : "cobro registrado (suscripción no activa)";
 }
 
@@ -360,27 +382,32 @@ async function handleSaleReversed(saleId, kind) {
   if (error) throw error;
   if (!payment) {
     console.warn(`[payments] ${kind} de un cobro que no tenemos registrado (${saleId}). Se ignora.`);
-    return "cobro no registrado, ignorado";
+    return { result: "cobro no registrado, ignorado" };
   }
-  if (payment.status === kind) return "aviso repetido, ignorado";
+
+  const user = await findUserById(payment.user_id);
+  const subscriptionId = user?.paypal_subscription_id || null;
+  if (payment.status === kind) return { subscriptionId, result: "aviso repetido, ignorado" };
 
   const { error: updateError } = await supabaseAdmin.from("payments").update({ status: kind }).eq("id", payment.id);
   if (updateError) throw updateError;
 
-  const user = await findUserById(payment.user_id);
-  if (!user) return `cobro marcado ${kind}; usuario no encontrado`;
+  if (!user) return { result: `cobro marcado ${kind}; usuario no encontrado` };
 
-  if (user.paypal_subscription_id) {
+  // Primero queda como reembolsada (estado final) y en Gratis; despues se
+  // cancela en PayPal. Asi el aviso "cancelada" que eso provoca ya la
+  // encuentra en estado final y no cambia nada.
+  await downgradeToFree(user.id, {
+    subscriptionStatus: subscriptionId ? SUBSCRIPTION_STATUS.REFUNDED : undefined,
+  });
+
+  if (subscriptionId) {
     try {
-      await paypal.cancelSubscription(user.paypal_subscription_id, "Pago reembolsado o revertido");
+      await paypal.cancelSubscription(subscriptionId, "Pago reembolsado o revertido");
     } catch (err) {
-      console.error(`[payments] No se pudo cancelar en PayPal la suscripción ${user.paypal_subscription_id}:`, err);
+      console.error(`[payments] No se pudo cancelar en PayPal la suscripción ${subscriptionId}:`, err);
     }
   }
-
-  await downgradeToFree(user.id, {
-    subscriptionStatus: user.paypal_subscription_id ? SUBSCRIPTION_STATUS.REFUNDED : undefined,
-  });
 
   await notifyAdmin([
     kind === "refunded" ? "↩️ Pago reembolsado: el usuario pasó a Gratis" : "⚠️ Contracargo: el usuario pasó a Gratis",
@@ -389,25 +416,27 @@ async function handleSaleReversed(saleId, kind) {
     `🆔 Cobro: ${saleId}`,
   ]);
 
-  return user.paypal_subscription_id ? `cobro ${kind}: pasó a Gratis y se canceló la suscripción` : `cobro ${kind}: pasó a Gratis`;
+  return {
+    subscriptionId,
+    result: subscriptionId ? `cobro ${kind}: pasó a Gratis y se canceló la suscripción` : `cobro ${kind}: pasó a Gratis`,
+  };
 }
 
 // Procesa un aviso ya verificado. Devuelve { subscriptionId, result } para
 // el registro del servidor (sin datos personales).
 async function handlePaypalEvent(event) {
   const resource = event.resource || {};
-  const subscriptionId =
+  let subscriptionId =
     resource.billing_agreement_id || (event.event_type?.startsWith("BILLING.SUBSCRIPTION.") ? resource.id : null);
 
   let result;
   switch (event.event_type) {
     case "BILLING.SUBSCRIPTION.ACTIVATED": {
       const activated = await activateSubscription(resource);
-      result = !activated
-        ? "ignorado (datos no válidos o usuario desconocido)"
-        : activated.isNew
-          ? "activada (alta nueva)"
-          : "ya estaba activa, sin repetir el alta";
+      if (!activated) result = "ignorado (datos no válidos o usuario desconocido)";
+      else if (activated.refunded) result = "sin cambios (ya reembolsada o terminada)";
+      else if (activated.isNew) result = "activada (alta nueva)";
+      else result = "ya estaba activa, sin repetir el alta";
       break;
     }
     case "PAYMENT.SALE.COMPLETED":
@@ -426,11 +455,16 @@ async function handlePaypalEvent(event) {
       result = await handleSubscriptionStatusEvent(resource, SUBSCRIPTION_STATUS.EXPIRED);
       break;
     case "PAYMENT.SALE.REFUNDED":
-      result = await handleSaleReversed(resource.sale_id, "refunded");
+    case "PAYMENT.SALE.REVERSED": {
+      // El aviso de reembolso no trae la suscripcion: se usa la del usuario.
+      const reversed =
+        event.event_type === "PAYMENT.SALE.REFUNDED"
+          ? await handleSaleReversed(resource.sale_id, "refunded")
+          : await handleSaleReversed(resource.id, "reversed");
+      result = reversed.result;
+      subscriptionId = reversed.subscriptionId || subscriptionId;
       break;
-    case "PAYMENT.SALE.REVERSED":
-      result = await handleSaleReversed(resource.id, "reversed");
-      break;
+    }
     default:
       result = "sin acción";
   }
