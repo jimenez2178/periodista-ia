@@ -100,6 +100,16 @@ async function cancelSubscription(subscriptionId, reason) {
 // el texto crudo tal cual llego: re-serializar el JSON puede cambiar el
 // formato y hacer fallar la verificacion.
 async function verifyWebhookSignature(headers, rawBody) {
+  const signatureHeaders = [
+    "paypal-auth-algo",
+    "paypal-cert-url",
+    "paypal-transmission-id",
+    "paypal-transmission-sig",
+    "paypal-transmission-time",
+  ];
+  // Sin las cabeceras de firma no puede venir de PayPal: se rechaza sin consultar.
+  if (!rawBody || signatureHeaders.some((name) => !headers[name])) return false;
+
   const head = JSON.stringify({
     auth_algo: headers["paypal-auth-algo"],
     cert_url: headers["paypal-cert-url"],
@@ -109,11 +119,18 @@ async function verifyWebhookSignature(headers, rawBody) {
     webhook_id: env.paypalWebhookId,
   });
 
-  const data = await paypalRequest("POST", "/v1/notifications/verify-webhook-signature", {
-    rawBody: `${head.slice(0, -1)},"webhook_event":${rawBody}}`,
-  });
-
-  return data?.verification_status === "SUCCESS";
+  try {
+    const data = await paypalRequest("POST", "/v1/notifications/verify-webhook-signature", {
+      rawBody: `${head.slice(0, -1)},"webhook_event":${rawBody}}`,
+    });
+    return data?.verification_status === "SUCCESS";
+  } catch (err) {
+    // 400 = PayPal considera el aviso mal formado: no es valido. Cualquier
+    // otro error (PayPal caido, red) se propaga para responder 500 y que
+    // PayPal reintente el aviso real.
+    if (err.paypalStatus === 400) return false;
+    throw err;
+  }
 }
 
 module.exports = {
