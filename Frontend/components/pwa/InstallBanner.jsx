@@ -7,7 +7,9 @@ import { useInstallApp, openInstallGuide } from "../../hooks/useInstallApp";
 const DISMISSED_KEY = "install-banner-dismissed";
 
 export default function InstallBanner() {
-  const { standalone } = useInstallApp();
+  const { standalone, platform } = useInstallApp();
+  // En el celular el aviso queda fijo: es justo donde se instala la app.
+  const isMobile = platform === "ios" || platform === "android";
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function InstallBanner() {
     }
   }
 
-  if (standalone || dismissed) return null;
+  if (standalone || (dismissed && !isMobile)) return null;
 
   return (
     <div className="flex items-center gap-3 bg-brand-blue px-4 py-2 text-white md:px-8">
@@ -40,14 +42,16 @@ export default function InstallBanner() {
       >
         Ver cómo
       </button>
-      <button
-        type="button"
-        onClick={handleDismiss}
-        aria-label="Ocultar aviso de instalación"
-        className="flex h-9 w-9 shrink-0 items-center justify-center text-white/70 hover:text-white"
-      >
-        <X size={18} />
-      </button>
+      {!isMobile && (
+        <button
+          type="button"
+          onClick={handleDismiss}
+          aria-label="Ocultar aviso de instalación"
+          className="flex h-9 w-9 shrink-0 items-center justify-center text-white/70 hover:text-white"
+        >
+          <X size={18} />
+        </button>
+      )}
     </div>
   );
 }
