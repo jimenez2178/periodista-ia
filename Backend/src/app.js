@@ -19,10 +19,14 @@ const toolsRoutes = require("./modules/tools/tools.routes");
 const socialRoutes = require("./modules/social/social.routes");
 const paymentsRoutes = require("./modules/payments/payments.routes");
 const docToNoteRoutes = require("./modules/doc-to-note/doc-to-note.routes");
+const subscriptionsRoutes = require("./modules/payments/subscriptions.routes");
 
 const app = express();
 
 app.use(cors());
+// Antes del express.json() global: el aviso de PayPal se verifica con el body
+// crudo. La sesion se exige ruta por ruta dentro (los avisos no traen token).
+app.use("/api/subscriptions", subscriptionsRoutes);
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);

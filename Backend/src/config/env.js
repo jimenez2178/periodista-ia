@@ -29,4 +29,14 @@ module.exports = {
   paypalIpnVerifyUrl: process.env.PAYPAL_IPN_VERIFY_URL || "https://ipnpb.paypal.com/cgi-bin/webscr",
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
   telegramChatId: process.env.TELEGRAM_CHAT_ID,
+  // Suscripcion mensual de PayPal (API REST + avisos/webhooks). Por defecto
+  // "sandbox": solo con PAYPAL_MODE=live se cobra dinero real. Si faltan las
+  // claves, las rutas de suscripcion responden "no configurado" sin romper nada.
+  paypalMode: process.env.PAYPAL_MODE === "live" ? "live" : "sandbox",
+  paypalClientId: process.env.PAYPAL_CLIENT_ID,
+  paypalClientSecret: process.env.PAYPAL_CLIENT_SECRET,
+  paypalPlanId: process.env.PAYPAL_PLAN_ID,
+  paypalWebhookId: process.env.PAYPAL_WEBHOOK_ID,
+  // A donde vuelve el usuario despues de aprobar (o abandonar) en PayPal.
+  appUrl: (process.env.APP_URL || "https://www.periodista-ia-app.com").replace(/\/$/, ""),
 };
