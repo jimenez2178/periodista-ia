@@ -67,7 +67,6 @@ router.post("/", uploadRateLimit, requireCredits, upload.single("document"), asy
     // redacte despues desde este analisis parte del mismo texto.
     const { text, warning } = capDocumentText(fullText);
     const results = await generateDocumentAnalysis({ text, analysisTypes });
-    await incrementUsedCredits(req.credits);
 
     const saved = await saveDocument({
       userId: req.user.id,
@@ -78,6 +77,8 @@ router.post("/", uploadRateLimit, requireCredits, upload.single("document"), asy
       results,
       extractedText: text,
     });
+    // El crédito se cobra solo con el análisis hecho y guardado: si algo falla antes, no se descuenta.
+    await incrementUsedCredits(req.credits);
 
     res.json({
       id: saved.id,
@@ -153,7 +154,6 @@ router.post("/:id/note", requireCredits, async (req, res, next) => {
       organizationName,
       angle: (angle || "").trim(),
     });
-    await incrementUsedCredits(req.credits);
 
     const saved = await saveArticle({
       userId: req.user.id,
@@ -162,6 +162,8 @@ router.post("/:id/note", requireCredits, async (req, res, next) => {
       article,
       language: null,
     });
+    // Igual que el análisis: se cobra solo con la nota generada y guardada.
+    await incrementUsedCredits(req.credits);
 
     res.json(saved);
   } catch (err) {

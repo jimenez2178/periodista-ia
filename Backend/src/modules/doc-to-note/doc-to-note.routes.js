@@ -95,7 +95,6 @@ router.post("/", uploadRateLimit, requireCredits, upload.single("document"), asy
       organizationName,
       angle: (angle || "").trim(),
     });
-    await incrementUsedCredits(req.credits);
 
     // Se guarda al generarse (como en las demás funciones): así aparece en el
     // historial, las ediciones se autoguardan y "Guardar en proyecto" solo la vincula.
@@ -106,6 +105,8 @@ router.post("/", uploadRateLimit, requireCredits, upload.single("document"), asy
       article,
       language: null,
     });
+    // El crédito se cobra solo con la nota generada y guardada: si algo falla antes, no se descuenta.
+    await incrementUsedCredits(req.credits);
 
     res.json({ ...saved, format, tone, ...(warning && { warning }) });
   } catch (err) {

@@ -78,8 +78,6 @@ router.post("/", uploadRateLimit, requireCredits, upload.single("audio"), async 
       });
     }
 
-    await incrementUsedCredits(req.credits);
-
     const transcription = await saveTranscription({
       userId: req.user.id,
       audioSource,
@@ -89,6 +87,9 @@ router.post("/", uploadRateLimit, requireCredits, upload.single("audio"), async 
       text,
       language,
     });
+    // El crédito se cobra solo con la transcripción hecha y guardada: si Whisper
+    // o el guardado fallan, no se descuenta.
+    await incrementUsedCredits(req.credits);
 
     res.json({
       transcription_id: transcription.id,

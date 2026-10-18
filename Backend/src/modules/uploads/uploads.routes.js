@@ -33,7 +33,12 @@ ticketRouter.post("/ticket", (req, res) => {
 
 // Solo la web de PeriodistaIA (y localhost fuera de produccion) puede subir
 // directo. Este CORS aplica unicamente a /api/direct; el resto del backend no cambia.
-const allowedOrigins = [env.appUrl, ...(env.nodeEnv === "production" ? [] : ["http://localhost:3000"])];
+// En produccion se descarta cualquier localhost, aunque APP_URL lo traiga por error.
+const isLocalhost = (origin) => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+const allowedOrigins =
+  env.nodeEnv === "production"
+    ? [env.appUrl].filter((origin) => !isLocalhost(origin))
+    : [env.appUrl, "http://localhost:3000"];
 
 const directUploadCors = cors({
   origin: allowedOrigins,
