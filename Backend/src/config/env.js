@@ -38,5 +38,15 @@ module.exports = {
   paypalPlanId: process.env.PAYPAL_PLAN_ID,
   paypalWebhookId: process.env.PAYPAL_WEBHOOK_ID,
   // A donde vuelve el usuario despues de aprobar (o abandonar) en PayPal.
+  // Tambien es el unico origen autorizado para la subida directa de archivos.
   appUrl: (process.env.APP_URL || "https://www.periodista-ia-app.com").replace(/\/$/, ""),
+  // Subida directa de archivos (navegador -> backend, sin el limite de 4,5 MB
+  // de Vercel). Sin UPLOAD_TICKET_SECRET el frontend sigue subiendo por el proxy.
+  uploadTicketSecret: process.env.UPLOAD_TICKET_SECRET,
+  publicApiUrl: (
+    process.env.PUBLIC_API_URL ||
+    (process.env.NODE_ENV === "production"
+      ? "https://api.periodista-ia-app.com"
+      : `http://localhost:${process.env.PORT || 3001}`)
+  ).replace(/\/$/, ""),
 };

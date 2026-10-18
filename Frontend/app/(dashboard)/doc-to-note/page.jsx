@@ -31,6 +31,7 @@ export default function DocToNotePage() {
   const [showForm, setShowForm] = useState(true);
   const [formKey, setFormKey] = useState(0);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -41,11 +42,13 @@ export default function DocToNotePage() {
   async function handleGenerate(options) {
     setGenerating(true);
     setError("");
+    setWarning("");
     setNeedsUpgrade(false);
 
     try {
       const data = await generateNoteFromDocument(options);
       setArticle(data);
+      setWarning(data.warning || "");
       setSavedToProject(false);
       setShowForm(false);
       refreshCredits();
@@ -78,6 +81,7 @@ export default function DocToNotePage() {
     setShowForm(true);
     setFormKey((key) => key + 1);
     setError("");
+    setWarning("");
     setNeedsUpgrade(false);
   }
 
@@ -101,6 +105,11 @@ export default function DocToNotePage() {
       </div>
 
       {error && <p className="text-sm text-brand-error">{error}</p>}
+      {warning && (
+        <p className="rounded-brand border border-brand-yellow bg-brand-yellow/10 px-4 py-3 text-sm text-brand-text">
+          ⚠️ {warning}
+        </p>
+      )}
       {needsUpgrade && <UpgradePrompt />}
 
       {generating && (

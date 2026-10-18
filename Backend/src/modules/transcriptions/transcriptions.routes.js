@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const requireCredits = require("../../middleware/credits");
+const uploadRateLimit = require("../../middleware/uploadRateLimit");
 const { incrementUsedCredits } = require("../credits/credits.service");
 const {
   getAudioDuration,
@@ -31,7 +32,7 @@ const EXTENSION_BY_CONTENT_TYPE = {
   "audio/ogg": "ogg",
 };
 
-router.post("/", requireCredits, upload.single("audio"), async (req, res, next) => {
+router.post("/", uploadRateLimit, requireCredits, upload.single("audio"), async (req, res, next) => {
   try {
     let buffer;
     let mimeType;

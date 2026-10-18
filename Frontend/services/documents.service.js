@@ -1,12 +1,11 @@
+import { uploadFile } from "./direct-upload.service";
+
 export async function analyzeDocument({ file, analysisTypes }) {
   const formData = new FormData();
   formData.append("document", file);
   formData.append("analysis_types", JSON.stringify(analysisTypes));
 
-  const response = await fetch("/api/proxy/documents", {
-    method: "POST",
-    body: formData,
-  });
+  const response = await uploadFile("documents", formData, file.size);
 
   let data = null;
   try {

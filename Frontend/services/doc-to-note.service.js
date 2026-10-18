@@ -1,3 +1,5 @@
+import { uploadFile } from "./direct-upload.service";
+
 export async function generateNoteFromDocument({ file, text, format, organizationName, tone, length, angle }) {
   let response;
 
@@ -10,10 +12,7 @@ export async function generateNoteFromDocument({ file, text, format, organizatio
     formData.append("length", length);
     if (angle) formData.append("angle", angle);
 
-    response = await fetch("/api/proxy/doc-to-note", {
-      method: "POST",
-      body: formData,
-    });
+    response = await uploadFile("doc-to-note", formData, file.size);
   } else {
     response = await fetch("/api/proxy/doc-to-note", {
       method: "POST",

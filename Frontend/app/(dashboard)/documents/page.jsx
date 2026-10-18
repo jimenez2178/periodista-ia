@@ -28,6 +28,7 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -72,11 +73,13 @@ export default function DocumentsPage() {
   async function handleAnalyze({ file, analysisTypes }) {
     setLoading(true);
     setError("");
+    setWarning("");
     setNeedsUpgrade(false);
 
     try {
       const data = await analyzeDocument({ file, analysisTypes });
       setResult(data);
+      setWarning(data.warning || "");
       refreshCredits();
     } catch (err) {
       if (err.status === 402 && err.code === "DOCUMENT_TOO_LARGE") {
@@ -158,6 +161,7 @@ export default function DocumentsPage() {
     setNoteNeedsUpgrade(false);
     setNoteSavedToProject(false);
     setError("");
+    setWarning("");
     setNeedsUpgrade(false);
   }
 
@@ -182,6 +186,11 @@ export default function DocumentsPage() {
       )}
 
       {error && <p className="text-sm text-brand-error">{error}</p>}
+      {warning && (
+        <p className="rounded-brand border border-brand-yellow bg-brand-yellow/10 px-4 py-3 text-sm text-brand-text">
+          ⚠️ {warning}
+        </p>
+      )}
       {needsUpgrade && <UpgradePrompt />}
 
       {loading && (

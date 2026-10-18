@@ -20,9 +20,13 @@ const socialRoutes = require("./modules/social/social.routes");
 const paymentsRoutes = require("./modules/payments/payments.routes");
 const docToNoteRoutes = require("./modules/doc-to-note/doc-to-note.routes");
 const subscriptionsRoutes = require("./modules/payments/subscriptions.routes");
+const { ticketRouter: uploadTicketRoutes, directRouter: directUploadRoutes } = require("./modules/uploads/uploads.routes");
 
 const app = express();
 
+// Subida directa de archivos grandes: antes del cors() abierto, para que estas
+// rutas solo respondan a la web de PeriodistaIA. Se autentican con el pase de subida.
+app.use("/api/direct", directUploadRoutes);
 app.use(cors());
 // Antes del express.json() global: el aviso de PayPal se verifica con el body
 // crudo. La sesion se exige ruta por ruta dentro (los avisos no traen token).
@@ -45,6 +49,7 @@ app.use("/api/tools", requireAuth, toolsRoutes);
 app.use("/api/social", requireAuth, socialRoutes);
 app.use("/api/payments", paymentsRoutes); // sin requireAuth -- PayPal no manda token
 app.use("/api/doc-to-note", requireAuth, docToNoteRoutes);
+app.use("/api/uploads", requireAuth, uploadTicketRoutes);
 
 app.use(errorHandler);
 

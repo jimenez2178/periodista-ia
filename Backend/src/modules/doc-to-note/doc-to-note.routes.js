@@ -1,13 +1,15 @@
 const express = require("express");
 const multer = require("multer");
 const requireCredits = require("../../middleware/credits");
+const uploadRateLimit = require("../../middleware/uploadRateLimit");
 const { incrementUsedCredits } = require("../credits/credits.service");
 const { extractText } = require("../documents/documents.service");
 const { generateNoteFromDocument } = require("./doc-to-note.service");
 const { ARTICLE_TYPE_BY_FORMAT, VALID_FORMATS } = require("./doc-to-note.prompts");
 const { saveArticle } = require("../articles/articles.service");
+const { capDocumentText } = require("../../utils/documentText");
 
-const MAX_DOCUMENT_BYTES = 15 * 1024 * 1024;
+const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
 const FREE_PLAN_MAX_BYTES = 500 * 1024;
 const FREE_PLAN_MAX_PAGES = 5;
 
@@ -19,7 +21,7 @@ const MAX_PASTED_TEXT_LENGTH = 5000;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_DOCUMENT_BYTES } });
 const router = express.Router();
 
-router.post("/", requireCredits, upload.single("document"), async (req, res, next) => {
+router.post("/", uploadRateLimit, requireCredits, upload.single("document"), async (req, res, next) => {
   try {
     const { format, tone, length, angle, text: pastedText } = req.body;
     const organizationName = req.body.organization_name;
@@ -52,6 +54,7 @@ router.post("/", requireCredits, upload.single("document"), async (req, res, nex
     }
 
     let text;
+    let warning = null;
 
     if (req.file) {
       let pageCount, fileType;
@@ -72,6 +75,8 @@ router.post("/", requireCredits, upload.single("document"), async (req, res, nex
           code: "DOCUMENT_TOO_LARGE",
         });
       }
+
+      ({ text, warning } = capDocumentText(text));
     } else {
       if (typeof pastedText !== "string" || !pastedText.trim()) {
         return res.status(400).json({ error: "El texto no puede estar vacío." });
@@ -102,7 +107,7 @@ router.post("/", requireCredits, upload.single("document"), async (req, res, nex
       language: null,
     });
 
-    res.json({ ...saved, format, tone });
+    res.json({ ...saved, format, tone, ...(warning && { warning }) });
   } catch (err) {
     next(err);
   }

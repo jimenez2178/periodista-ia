@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const requireCredits = require("../../middleware/credits");
+const uploadRateLimit = require("../../middleware/uploadRateLimit");
 const { incrementUsedCredits } = require("../credits/credits.service");
 const {
   ANALYSIS_TYPE_SLUGS,
@@ -13,19 +14,20 @@ const {
 const { generateNoteFromDocument } = require("../doc-to-note/doc-to-note.service");
 const { ARTICLE_TYPE_BY_FORMAT, VALID_FORMATS } = require("../doc-to-note/doc-to-note.prompts");
 const { saveArticle } = require("../articles/articles.service");
+const { capDocumentText } = require("../../utils/documentText");
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_FIELD_LENGTH = 200;
 const MAX_ANGLE_LENGTH = 1000;
 
-const MAX_DOCUMENT_BYTES = 15 * 1024 * 1024;
+const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
 const FREE_PLAN_MAX_BYTES = 500 * 1024;
 const FREE_PLAN_MAX_PAGES = 5;
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_DOCUMENT_BYTES } });
 const router = express.Router();
 
-router.post("/", requireCredits, upload.single("document"), async (req, res, next) => {
+router.post("/", uploadRateLimit, requireCredits, upload.single("document"), async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "Debes subir un documento." });
@@ -46,9 +48,9 @@ router.post("/", requireCredits, upload.single("document"), async (req, res, nex
       return res.status(400).json({ error: "Selecciona al menos un tipo de análisis válido." });
     }
 
-    const { text, pageCount, fileType } = await extractText(req.file.buffer, req.file.originalname);
+    const { text: fullText, pageCount, fileType } = await extractText(req.file.buffer, req.file.originalname);
 
-    if (!text || !text.trim()) {
+    if (!fullText || !fullText.trim()) {
       return res.status(400).json({ error: "El documento no contiene texto legible." });
     }
 
@@ -61,6 +63,9 @@ router.post("/", requireCredits, upload.single("document"), async (req, res, nex
       });
     }
 
+    // El texto recortado es el que se analiza y se guarda: la nota que se
+    // redacte despues desde este analisis parte del mismo texto.
+    const { text, warning } = capDocumentText(fullText);
     const results = await generateDocumentAnalysis({ text, analysisTypes });
     await incrementUsedCredits(req.credits);
 
@@ -81,6 +86,7 @@ router.post("/", requireCredits, upload.single("document"), async (req, res, nex
       analysis_types: saved.analysis_types,
       results: saved.results,
       created_at: saved.created_at,
+      ...(warning && { warning }),
     });
   } catch (err) {
     next(err);

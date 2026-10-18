@@ -1,12 +1,14 @@
+import { uploadFile } from "./direct-upload.service";
+
 export async function transcribe({ file, url }) {
   const formData = new FormData();
   if (file) formData.append("audio", file);
   if (url) formData.append("url", url);
 
-  const response = await fetch("/api/proxy/transcriptions", {
-    method: "POST",
-    body: formData,
-  });
+  // Un enlace pesa poco y lo descarga el backend: sigue por el proxy.
+  const response = file
+    ? await uploadFile("transcriptions", formData, file.size)
+    : await fetch("/api/proxy/transcriptions", { method: "POST", body: formData });
 
   let data = null;
   try {
